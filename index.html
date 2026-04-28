@@ -1005,15 +1005,20 @@
         return;
       }
 
-      viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(location.lon - 3.5, location.lat - 2.2, 2100000),
-        orientation: {
-          heading: Cesium.Math.toRadians(20),
-          pitch: Cesium.Math.toRadians(-48),
-          roll: 0
-        },
-        duration: 1.2
-      });
+      const target = Cesium.Cartesian3.fromDegrees(location.lon, location.lat, 0);
+      const range = 2400000;
+
+      viewer.camera.flyToBoundingSphere(
+        new Cesium.BoundingSphere(target, 160934),
+        {
+          offset: new Cesium.HeadingPitchRange(
+            Cesium.Math.toRadians(18),
+            Cesium.Math.toRadians(-72),
+            range
+          ),
+          duration: 1.2
+        }
+      );
     }
 
     function routePositions(flight) {
