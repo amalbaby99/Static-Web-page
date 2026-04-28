@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SkyAbove Live Flight Tracker</title>
+  <link rel="icon" href="data:,">
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.140/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.140/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
   <style>
@@ -916,7 +917,7 @@
       { callsign: "TOM7KD", airline: "TUI Airways", from: "CWL", to: "PMI", fromName: "Cardiff", toName: "Palma", aircraft: "Boeing 737", altitude: 30000, speed: 447, heading: 149, vertical: "+320 ft/min", squawk: "2105", lat: 51.13, lon: -3.55, origin: { lat: 51.3967, lon: -3.3433 }, destination: { lat: 39.5517, lon: 2.7388 } }
     ];
 
-    let location = postcodeLocations.SW1A1AA;
+    let currentLocation = postcodeLocations.SW1A1AA;
     let visibleFlights = [];
     let selectedFlight = null;
     let viewer = null;
@@ -942,7 +943,7 @@
 
     function getNearbyFlights() {
       return flights
-        .map((flight) => ({ ...flight, distance: distanceMiles(location, flight) }))
+        .map((flight) => ({ ...flight, distance: distanceMiles(currentLocation, flight) }))
         .filter((flight) => flight.distance <= 100)
         .sort((a, b) => a.distance - b.distance);
     }
@@ -1005,7 +1006,7 @@
         return;
       }
 
-      const target = Cesium.Cartesian3.fromDegrees(location.lon, location.lat, 0);
+      const target = Cesium.Cartesian3.fromDegrees(currentLocation.lon, currentLocation.lat, 0);
       const range = 2400000;
 
       viewer.camera.flyToBoundingSphere(
@@ -1039,8 +1040,8 @@
 
       viewer.entities.add({
         id: "search-location",
-        name: location.postcode,
-        position: Cesium.Cartesian3.fromDegrees(location.lon, location.lat, 1200),
+        name: currentLocation.postcode,
+        position: Cesium.Cartesian3.fromDegrees(currentLocation.lon, currentLocation.lat, 1200),
         point: {
           pixelSize: 16,
           color: Cesium.Color.DODGERBLUE,
@@ -1049,7 +1050,7 @@
           disableDepthTestDistance: Number.POSITIVE_INFINITY
         },
         label: {
-          text: location.postcode,
+          text: currentLocation.postcode,
           font: "700 14px sans-serif",
           fillColor: Cesium.Color.WHITE,
           outlineColor: Cesium.Color.BLACK,
@@ -1113,7 +1114,7 @@
     }
 
     function setDetail(flight) {
-      const distance = typeof flight.distance === "number" ? flight.distance : distanceMiles(location, flight);
+      const distance = typeof flight.distance === "number" ? flight.distance : distanceMiles(currentLocation, flight);
       selectedFlight = flight;
       detailCallsign.textContent = flight.callsign;
       detailAirline.textContent = flight.airline;
@@ -1152,12 +1153,12 @@
     }
 
     function updateLocation(nextLocation) {
-      location = nextLocation;
+      currentLocation = nextLocation;
       visibleFlights = getNearbyFlights();
-      selectedFlight = visibleFlights[0] || { ...flights[0], distance: distanceMiles(location, flights[0]) };
-      locationPostcode.textContent = location.postcode;
-      locationPlace.textContent = location.label;
-      locationCoords.textContent = `${formatCoord(location.lat, "N", "S")}, ${formatCoord(location.lon, "E", "W")}`;
+      selectedFlight = visibleFlights[0] || { ...flights[0], distance: distanceMiles(currentLocation, flights[0]) };
+      locationPostcode.textContent = currentLocation.postcode;
+      locationPlace.textContent = currentLocation.label;
+      locationCoords.textContent = `${formatCoord(currentLocation.lat, "N", "S")}, ${formatCoord(currentLocation.lon, "E", "W")}`;
       setDetail(selectedFlight);
       renderCesiumEntities();
       cameraToLocation();
@@ -1196,7 +1197,7 @@
 
     async function startApp() {
       await initCesium();
-      updateLocation(location);
+      updateLocation(currentLocation);
       updateClock();
       setInterval(updateClock, 1000);
     }
