@@ -956,17 +956,11 @@
         return;
       }
 
-      let naturalEarthLayer = false;
-
-      try {
-        naturalEarthLayer = await Cesium.ImageryLayer.fromProviderAsync(
-          Cesium.TileMapServiceImageryProvider.fromUrl(
-            Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII")
-          )
-        );
-      } catch (error) {
-        console.warn("Bundled Natural Earth imagery unavailable; using globe base color.", error);
-      }
+      const imageryLayer = await Cesium.ImageryLayer.fromProviderAsync(
+        Cesium.ArcGisMapServerImageryProvider.fromUrl(
+          "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer"
+        )
+      );
 
       viewer = new Cesium.Viewer("cesiumContainer", {
         animation: false,
@@ -980,17 +974,9 @@
         timeline: false,
         navigationHelpButton: false,
         shouldAnimate: true,
-        baseLayer: naturalEarthLayer,
+        baseLayer: imageryLayer,
         terrainProvider: new Cesium.EllipsoidTerrainProvider()
       });
-
-      try {
-        viewer.imageryLayers.addImageryProvider(new Cesium.OpenStreetMapImageryProvider({
-          url: "https://tile.openstreetmap.org/"
-        }));
-      } catch (error) {
-        console.warn("OpenStreetMap imagery unavailable, using bundled Natural Earth imagery.", error);
-      }
 
       viewer.scene.globe.enableLighting = false;
       viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString("#1f5ea8");
