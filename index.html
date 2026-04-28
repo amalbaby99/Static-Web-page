@@ -951,9 +951,21 @@
       return `${Math.abs(value).toFixed(4)} ${value >= 0 ? positive : negative}`;
     }
 
-    function initCesium() {
+    async function initCesium() {
       if (!window.Cesium) {
         return;
+      }
+
+      let naturalEarthLayer = false;
+
+      try {
+        naturalEarthLayer = await Cesium.ImageryLayer.fromProviderAsync(
+          Cesium.TileMapServiceImageryProvider.fromUrl(
+            Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII")
+          )
+        );
+      } catch (error) {
+        console.warn("Bundled Natural Earth imagery unavailable; using globe base color.", error);
       }
 
       viewer = new Cesium.Viewer("cesiumContainer", {
@@ -968,16 +980,22 @@
         timeline: false,
         navigationHelpButton: false,
         shouldAnimate: true,
-        baseLayer: false,
+        baseLayer: naturalEarthLayer,
         terrainProvider: new Cesium.EllipsoidTerrainProvider()
       });
 
-      viewer.imageryLayers.addImageryProvider(new Cesium.OpenStreetMapImageryProvider({
-        url: "https://tile.openstreetmap.org/"
-      }));
+      try {
+        viewer.imageryLayers.addImageryProvider(new Cesium.OpenStreetMapImageryProvider({
+          url: "https://tile.openstreetmap.org/"
+        }));
+      } catch (error) {
+        console.warn("OpenStreetMap imagery unavailable, using bundled Natural Earth imagery.", error);
+      }
 
-      viewer.scene.globe.enableLighting = true;
+      viewer.scene.globe.enableLighting = false;
+      viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString("#1f5ea8");
       viewer.scene.skyAtmosphere.show = true;
+      viewer.scene.backgroundColor = Cesium.Color.fromCssColorString("#02070d");
       viewer.scene.globe.depthTestAgainstTerrain = false;
       viewer.scene.screenSpaceCameraController.minimumZoomDistance = 300000;
       viewer.scene.screenSpaceCameraController.maximumZoomDistance = 14000000;
@@ -1185,10 +1203,14 @@
       clock.textContent = `${new Date().toISOString().slice(11, 19)} UTC`;
     }
 
-    initCesium();
-    updateLocation(location);
-    updateClock();
-    setInterval(updateClock, 1000);
+    async function startApp() {
+      await initCesium();
+      updateLocation(location);
+      updateClock();
+      setInterval(updateClock, 1000);
+    }
+
+    startApp();
   </script>
 </body>
 </html>
