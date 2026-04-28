@@ -645,13 +645,23 @@
       }
 
       .topbar {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr auto;
         gap: 1rem;
+        position: sticky;
+        top: 0;
       }
 
-      .nav,
-      .live {
-        justify-self: start;
+      .brand {
+        min-width: 0;
+      }
+
+      .search {
+        grid-column: 1 / -1;
+        grid-row: 2;
+      }
+
+      .nav {
+        display: none;
       }
 
       .workspace {
@@ -659,12 +669,21 @@
       }
 
       .sidebar {
+        grid-template-rows: auto auto auto;
         border-right: 0;
         border-bottom: 1px solid var(--line);
       }
 
+      .sidebar > div:empty {
+        display: none;
+      }
+
+      .flight-list {
+        max-height: 18rem;
+      }
+
       .map {
-        min-height: 44rem;
+        min-height: 42rem;
       }
 
       .detail {
@@ -682,14 +701,42 @@
       }
 
       footer {
+        display: grid;
+        gap: 0.35rem;
         padding: 1rem;
       }
     }
 
     @media (max-width: 560px) {
+      .app {
+        grid-template-rows: auto auto auto;
+      }
+
       .topbar,
       .sidebar {
-        padding: 1rem;
+        padding: 0.85rem;
+      }
+
+      .topbar {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .brand {
+        gap: 0.6rem;
+      }
+
+      .logo {
+        width: 2.45rem;
+        height: 2.45rem;
+      }
+
+      .brand-subtitle {
+        font-size: 0.62rem;
+        letter-spacing: 0.1rem;
+      }
+
+      .live {
+        display: none;
       }
 
       .search,
@@ -707,7 +754,87 @@
       }
 
       .brand-title {
+        font-size: 1.45rem;
+      }
+
+      .location-card {
+        padding: 1rem;
+      }
+
+      .postcode {
         font-size: 1.55rem;
+      }
+
+      .flight-row {
+        grid-template-columns: 1.8rem 1fr;
+        align-items: start;
+      }
+
+      .flight-values {
+        grid-column: 2;
+        text-align: left;
+      }
+
+      .map {
+        min-height: 34rem;
+      }
+
+      .compass {
+        top: 0.9rem;
+        right: 0.9rem;
+        width: 3.6rem;
+        height: 3.6rem;
+        font-size: 1.35rem;
+      }
+
+      .tool-stack {
+        top: 5rem;
+        right: 0.9rem;
+      }
+
+      .tool-stack button {
+        width: 3.2rem;
+        min-height: 3.1rem;
+      }
+
+      .zoom {
+        right: 0.9rem;
+        bottom: 1rem;
+      }
+
+      .zoom button {
+        width: 2.8rem;
+        height: 2.8rem;
+      }
+
+      .detail {
+        margin: 0.75rem;
+        padding: 1rem;
+      }
+
+      .detail h2 {
+        font-size: 1.25rem;
+      }
+
+      .route {
+        font-size: 1.55rem;
+      }
+
+      .aircraft-photo {
+        height: 5.8rem;
+      }
+
+      .metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.85rem;
+      }
+
+      .metric strong {
+        font-size: 1rem;
+      }
+
+      footer {
+        font-size: 0.72rem;
       }
     }
   </style>
