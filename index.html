@@ -184,9 +184,8 @@
     }
 
     .route-list li {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
+      display: grid;
+      gap: 0.35rem;
       padding-bottom: 0.75rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       color: var(--muted);
@@ -196,6 +195,20 @@
     .route-list b {
       color: var(--text);
       font-weight: 700;
+    }
+
+    .flight-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+
+    .flight-meta span {
+      padding: 0.22rem 0.45rem;
+      border: 1px solid rgba(143, 240, 207, 0.18);
+      border-radius: 0.35rem;
+      color: var(--muted);
+      font-size: 0.78rem;
     }
 
     .globe-stage {
@@ -290,9 +303,9 @@
           Route Globe
         </div>
 
-        <h1>Explore flight routes</h1>
+        <h1>Flights above you</h1>
         <p class="intro">
-          Search by postcode to find nearby airports and future route options. The postcode lookup is ready for an API connection when the backend is available.
+          Enter a postcode to see aircraft currently above the nearest 100-mile radius. This static version uses mock flight data, ready to be replaced by a live flight API later.
         </p>
 
         <form class="search-panel" id="postcodeForm">
@@ -301,36 +314,36 @@
             <input id="postcode" name="postcode" autocomplete="postal-code" placeholder="e.g. SW1A 1AA" required>
             <button type="submit">Search</button>
           </div>
-          <p class="message" id="message">Enter a postcode to prepare a future API route search.</p>
+          <p class="message" id="message">Try SW1A 1AA, M1 1AE, B1 1BB, EH1 1YZ, or CF10 1EP.</p>
         </form>
 
         <div class="stats" aria-label="Route summary">
           <div class="stat">
-            <strong>6</strong>
-            <span>sample routes</span>
+            <strong id="flightCount">0</strong>
+            <span>flights found</span>
           </div>
           <div class="stat">
-            <strong>4</strong>
-            <span>continents</span>
+            <strong>100</strong>
+            <span>mile radius</span>
           </div>
           <div class="stat">
-            <strong>360</strong>
-            <span>drag control</span>
+            <strong id="nearestFlight">--</strong>
+            <span>nearest flight</span>
           </div>
         </div>
 
-        <ul class="route-list" aria-label="Featured flight routes">
-          <li><b>London</b><span>New York</span></li>
-          <li><b>London</b><span>Dubai</span></li>
-          <li><b>Paris</b><span>Tokyo</span></li>
-          <li><b>Singapore</b><span>Sydney</span></li>
+        <ul class="route-list" id="flightList" aria-label="Flights within 100 miles">
+          <li>
+            <b>No postcode searched yet</b>
+            <span>Results will appear here.</span>
+          </li>
         </ul>
       </section>
     </aside>
 
     <main class="globe-stage">
       <canvas id="globe" width="900" height="900" aria-label="Interactive globe showing sample flight routes"></canvas>
-      <p class="globe-hint">Drag the globe to rotate it. Routes are sample data for the static front end and can later be replaced by API results.</p>
+      <p class="globe-hint">Drag the globe to rotate it. Search results highlight nearby aircraft and their route paths on the Earth.</p>
     </main>
   </div>
 
@@ -340,27 +353,114 @@
     const form = document.getElementById("postcodeForm");
     const postcodeInput = document.getElementById("postcode");
     const message = document.getElementById("message");
+    const flightCount = document.getElementById("flightCount");
+    const nearestFlight = document.getElementById("nearestFlight");
+    const flightList = document.getElementById("flightList");
 
-    const cities = {
-      London: { lat: 51.5074, lon: -0.1278 },
-      NewYork: { lat: 40.7128, lon: -74.006 },
-      Dubai: { lat: 25.2048, lon: 55.2708 },
-      Paris: { lat: 48.8566, lon: 2.3522 },
-      Tokyo: { lat: 35.6762, lon: 139.6503 },
-      Singapore: { lat: 1.3521, lon: 103.8198 },
-      Sydney: { lat: -33.8688, lon: 151.2093 },
-      CapeTown: { lat: -33.9249, lon: 18.4241 },
-      Rio: { lat: -22.9068, lon: -43.1729 }
+    const postcodeLocations = {
+      "SW1A1AA": { label: "Westminster, London", lat: 51.501, lon: -0.141 },
+      "M11AE": { label: "Manchester", lat: 53.479, lon: -2.245 },
+      "B11BB": { label: "Birmingham", lat: 52.479, lon: -1.902 },
+      "EH11YZ": { label: "Edinburgh", lat: 55.953, lon: -3.188 },
+      "CF101EP": { label: "Cardiff", lat: 51.481, lon: -3.179 }
     };
 
-    const routes = [
-      ["London", "NewYork"],
-      ["London", "Dubai"],
-      ["Paris", "Tokyo"],
-      ["Singapore", "Sydney"],
-      ["Dubai", "CapeTown"],
-      ["Rio", "London"]
+    const mockFlights = [
+      {
+        callsign: "BAW142",
+        airline: "British Airways",
+        from: "London Heathrow",
+        to: "New York JFK",
+        aircraft: "Boeing 777",
+        altitude: 33000,
+        speed: 489,
+        lat: 51.86,
+        lon: -1.6,
+        origin: { lat: 51.47, lon: -0.454 },
+        destination: { lat: 40.6413, lon: -73.7781 }
+      },
+      {
+        callsign: "EZY41MX",
+        airline: "easyJet",
+        from: "Manchester",
+        to: "Barcelona",
+        aircraft: "Airbus A320",
+        altitude: 28000,
+        speed: 431,
+        lat: 53.08,
+        lon: -2.9,
+        origin: { lat: 53.35, lon: -2.274 },
+        destination: { lat: 41.2974, lon: 2.0833 }
+      },
+      {
+        callsign: "RYR8VN",
+        airline: "Ryanair",
+        from: "Birmingham",
+        to: "Dublin",
+        aircraft: "Boeing 737",
+        altitude: 24000,
+        speed: 414,
+        lat: 52.61,
+        lon: -2.2,
+        origin: { lat: 52.4539, lon: -1.748 },
+        destination: { lat: 53.4213, lon: -6.2701 }
+      },
+      {
+        callsign: "VIR302",
+        airline: "Virgin Atlantic",
+        from: "London Heathrow",
+        to: "Delhi",
+        aircraft: "Airbus A350",
+        altitude: 37000,
+        speed: 502,
+        lat: 51.26,
+        lon: 0.92,
+        origin: { lat: 51.47, lon: -0.454 },
+        destination: { lat: 28.5562, lon: 77.1 }
+      },
+      {
+        callsign: "KLM64P",
+        airline: "KLM",
+        from: "Edinburgh",
+        to: "Amsterdam",
+        aircraft: "Embraer 190",
+        altitude: 21000,
+        speed: 398,
+        lat: 55.72,
+        lon: -2.65,
+        origin: { lat: 55.95, lon: -3.372 },
+        destination: { lat: 52.31, lon: 4.7683 }
+      },
+      {
+        callsign: "TOM7KD",
+        airline: "TUI Airways",
+        from: "Cardiff",
+        to: "Palma",
+        aircraft: "Boeing 737",
+        altitude: 30000,
+        speed: 447,
+        lat: 51.12,
+        lon: -3.55,
+        origin: { lat: 51.3967, lon: -3.3433 },
+        destination: { lat: 39.5517, lon: 2.7388 }
+      },
+      {
+        callsign: "DLH9KA",
+        airline: "Lufthansa",
+        from: "Frankfurt",
+        to: "Chicago",
+        aircraft: "Boeing 747",
+        altitude: 35000,
+        speed: 515,
+        lat: 50.05,
+        lon: 5.18,
+        origin: { lat: 50.0379, lon: 8.5622 },
+        destination: { lat: 41.9742, lon: -87.9073 }
+      }
     ];
+
+    let searchLocation = null;
+    let visibleFlights = mockFlights.slice(0, 4);
 
     const landmasses = [
       [
@@ -578,15 +678,17 @@
     }
 
     function drawRoutes(radius, center) {
-      routes.forEach(([start, end]) => {
-        const from = cities[start];
-        const to = cities[end];
-        const points = interpolateRoute(from, to);
+      visibleFlights.forEach((flight) => {
+        const points = interpolateRoute(flight.origin, flight.destination);
 
         ctx.strokeStyle = "rgba(246, 200, 95, 0.78)";
         ctx.lineWidth = 2.5;
         drawGeoLine(radius, center, points);
       });
+
+      if (searchLocation) {
+        drawRadiusMarker(radius, center, searchLocation);
+      }
     }
 
     function interpolateRoute(from, to) {
@@ -605,8 +707,8 @@
     }
 
     function drawCities(radius, center) {
-      Object.entries(cities).forEach(([name, coords]) => {
-        const point = project(coords.lat, coords.lon, radius, center);
+      visibleFlights.forEach((flight) => {
+        const point = project(flight.lat, flight.lon, radius, center);
 
         if (point.z < 0) {
           return;
@@ -615,10 +717,91 @@
         const scale = 0.7 + point.z * 0.5;
 
         ctx.beginPath();
-        ctx.arc(point.x, point.y, 4 * scale, 0, Math.PI * 2);
-        ctx.fillStyle = name === "London" ? "#8ff0cf" : "#f6c85f";
+        ctx.arc(point.x, point.y, 5 * scale, 0, Math.PI * 2);
+        ctx.fillStyle = "#f6c85f";
         ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 10 * scale, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(246, 200, 95, 0.35)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
       });
+    }
+
+    function drawRadiusMarker(radius, center, location) {
+      const point = project(location.lat, location.lon, radius, center);
+
+      if (point.z < 0) {
+        return;
+      }
+
+      const scale = 0.8 + point.z * 0.4;
+
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 7 * scale, 0, Math.PI * 2);
+      ctx.fillStyle = "#8ff0cf";
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 22 * scale, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(143, 240, 207, 0.42)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    function normalisePostcode(value) {
+      return value.replace(/\s+/g, "").toUpperCase();
+    }
+
+    function milesBetween(a, b) {
+      const earthRadiusMiles = 3958.8;
+      const dLat = toRadians(b.lat - a.lat);
+      const dLon = toRadians(b.lon - a.lon);
+      const lat1 = toRadians(a.lat);
+      const lat2 = toRadians(b.lat);
+      const haversine = Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+
+      return 2 * earthRadiusMiles * Math.asin(Math.sqrt(haversine));
+    }
+
+    function findFlightsNear(location) {
+      return mockFlights
+        .map((flight) => ({
+          ...flight,
+          distance: Math.round(milesBetween(location, flight))
+        }))
+        .filter((flight) => flight.distance <= 100)
+        .sort((a, b) => a.distance - b.distance);
+    }
+
+    function renderFlights(flights, location) {
+      flightCount.textContent = String(flights.length);
+      nearestFlight.textContent = flights.length ? `${flights[0].distance}mi` : "--";
+
+      if (!flights.length) {
+        flightList.innerHTML = `
+          <li>
+            <b>No flights found</b>
+            <span>No mock aircraft are currently within 100 miles of ${location.label}.</span>
+          </li>
+        `;
+        return;
+      }
+
+      flightList.innerHTML = flights.map((flight) => `
+        <li>
+          <b>${flight.callsign} - ${flight.airline}</b>
+          <span>${flight.from} to ${flight.to}</span>
+          <div class="flight-meta">
+            <span>${flight.distance} mi away</span>
+            <span>${flight.altitude.toLocaleString()} ft</span>
+            <span>${flight.speed} mph</span>
+            <span>${flight.aircraft}</span>
+          </div>
+        </li>
+      `).join("");
     }
 
     function draw() {
@@ -674,7 +857,7 @@
     form.addEventListener("submit", (event) => {
       event.preventDefault();
 
-      const postcode = postcodeInput.value.trim().toUpperCase();
+      const postcode = normalisePostcode(postcodeInput.value);
 
       if (!postcode) {
         message.textContent = "Enter a postcode before searching.";
@@ -682,7 +865,19 @@
         return;
       }
 
-      message.textContent = `Postcode ${postcode} captured. This is where the future airport and route API call will run.`;
+      const location = postcodeLocations[postcode];
+
+      if (!location) {
+        message.textContent = "That postcode is not in the static demo dataset yet. Try SW1A 1AA, M1 1AE, B1 1BB, EH1 1YZ, or CF10 1EP.";
+        message.style.color = "var(--danger)";
+        return;
+      }
+
+      searchLocation = location;
+      visibleFlights = findFlightsNear(location);
+      renderFlights(visibleFlights, location);
+
+      message.textContent = `Showing mock aircraft within 100 miles of ${location.label}. This will later call the live flight data API.`;
       message.style.color = "var(--accent-strong)";
     });
 
