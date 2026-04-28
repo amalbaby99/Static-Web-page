@@ -516,113 +516,6 @@
       cursor: pointer;
     }
 
-    .detail {
-      position: absolute;
-      left: 1rem;
-      right: 1rem;
-      bottom: 1rem;
-      z-index: 2;
-      display: grid;
-      grid-template-columns: 19rem minmax(14rem, 20rem) 1fr;
-      gap: 1.5rem;
-      align-items: center;
-      padding: 1.05rem 1.4rem;
-      border: 1px solid var(--line);
-      border-radius: 0.55rem;
-      background: rgba(5, 12, 22, 0.94);
-      backdrop-filter: blur(18px);
-      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
-    }
-
-    .detail h2 {
-      margin: 0;
-      font-size: 1.5rem;
-    }
-
-    .pill {
-      display: inline-block;
-      margin-left: 0.55rem;
-      padding: 0.25rem 0.45rem;
-      border-radius: 999px;
-      background: rgba(45, 221, 114, 0.22);
-      color: #b8f8ce;
-      font-size: 0.7rem;
-      font-weight: 900;
-      vertical-align: middle;
-    }
-
-    .route {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      align-items: center;
-      gap: 0.7rem;
-      margin-top: 0.8rem;
-      font-size: 1.9rem;
-      font-weight: 850;
-    }
-
-    .route-line {
-      height: 1px;
-      background: linear-gradient(90deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.15));
-      position: relative;
-    }
-
-    .route-line::after {
-      content: ">";
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -55%);
-      color: #fff;
-      font-size: 1.25rem;
-    }
-
-    .aircraft-photo {
-      height: 7.8rem;
-      border-radius: 0.5rem;
-      background:
-        linear-gradient(12deg, transparent 42%, #f8fbff 43% 52%, transparent 53%),
-        linear-gradient(150deg, transparent 48%, #d51d35 49% 54%, transparent 55%),
-        linear-gradient(180deg, #90c6ee, #d7ecff);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .aircraft-photo::before {
-      content: "";
-      position: absolute;
-      left: 3.2rem;
-      top: 4.1rem;
-      width: 9rem;
-      height: 1.35rem;
-      border-radius: 999px;
-      background: #f7fbff;
-      box-shadow: 0.9rem 0.25rem 0 -0.1rem #dae4ef;
-    }
-
-    .metrics {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1rem 1.5rem;
-      border-left: 1px solid var(--line);
-      padding-left: 1.5rem;
-    }
-
-    .metric span {
-      display: block;
-      color: var(--muted);
-      font-size: 0.78rem;
-      font-weight: 850;
-      text-transform: uppercase;
-    }
-
-    .metric strong {
-      display: block;
-      margin-top: 0.45rem;
-      font-size: 1.15rem;
-      font-weight: 700;
-    }
-
     footer {
       display: flex;
       align-items: center;
@@ -686,20 +579,6 @@
         min-height: 42rem;
       }
 
-      .detail {
-        grid-template-columns: 1fr;
-        position: relative;
-        margin: 1rem;
-        left: auto;
-        right: auto;
-        bottom: auto;
-      }
-
-      .metrics {
-        border-left: 0;
-        padding-left: 0;
-      }
-
       footer {
         display: grid;
         gap: 0.35rem;
@@ -740,8 +619,7 @@
       }
 
       .search,
-      .data-card,
-      .metrics {
+      .data-card {
         grid-template-columns: 1fr;
       }
 
@@ -805,32 +683,6 @@
       .zoom button {
         width: 2.8rem;
         height: 2.8rem;
-      }
-
-      .detail {
-        margin: 0.75rem;
-        padding: 1rem;
-      }
-
-      .detail h2 {
-        font-size: 1.25rem;
-      }
-
-      .route {
-        font-size: 1.55rem;
-      }
-
-      .aircraft-photo {
-        height: 5.8rem;
-      }
-
-      .metrics {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.85rem;
-      }
-
-      .metric strong {
-        font-size: 1rem;
       }
 
       footer {
@@ -955,46 +807,6 @@
           <button type="button">-</button>
           <button type="button">*</button>
         </div>
-
-        <article class="detail card" id="flightDetail">
-          <div>
-            <h2><span id="detailCallsign">BAW142</span><span class="pill">IN FLIGHT</span></h2>
-            <p class="airline" id="detailAirline">British Airways</p>
-            <div class="route">
-              <span id="detailFrom">LHR</span>
-              <span class="route-line"></span>
-              <span id="detailTo">JFK</span>
-            </div>
-            <p class="airline" id="detailSchedule">London Heathrow to New York JFK</p>
-          </div>
-          <div class="aircraft-photo" aria-hidden="true"></div>
-          <div class="metrics">
-            <div class="metric">
-              <span>Altitude</span>
-              <strong id="detailAltitude">36,000 ft</strong>
-            </div>
-            <div class="metric">
-              <span>Speed</span>
-              <strong id="detailSpeed">466 kts</strong>
-            </div>
-            <div class="metric">
-              <span>Heading</span>
-              <strong id="detailHeading">287 deg</strong>
-            </div>
-            <div class="metric">
-              <span>Distance</span>
-              <strong id="detailDistance">2.1 km</strong>
-            </div>
-            <div class="metric">
-              <span>Vertical Speed</span>
-              <strong id="detailVertical">+64 ft/min</strong>
-            </div>
-            <div class="metric">
-              <span>Squawk</span>
-              <strong id="detailSquawk">1234</strong>
-            </div>
-          </div>
-        </article>
       </section>
     </main>
 
@@ -1013,17 +825,6 @@
     const locationCoords = document.getElementById("locationCoords");
     const flightCount = document.getElementById("flightCount");
     const flightRows = document.getElementById("flightRows");
-    const detailCallsign = document.getElementById("detailCallsign");
-    const detailAirline = document.getElementById("detailAirline");
-    const detailFrom = document.getElementById("detailFrom");
-    const detailTo = document.getElementById("detailTo");
-    const detailSchedule = document.getElementById("detailSchedule");
-    const detailAltitude = document.getElementById("detailAltitude");
-    const detailSpeed = document.getElementById("detailSpeed");
-    const detailHeading = document.getElementById("detailHeading");
-    const detailDistance = document.getElementById("detailDistance");
-    const detailVertical = document.getElementById("detailVertical");
-    const detailSquawk = document.getElementById("detailSquawk");
 
     const postcodeLocations = {
       "SW1A1AA": { postcode: "SW1A 1AA", label: "London, United Kingdom", lat: 51.501, lon: -0.141 },
@@ -1121,7 +922,8 @@
           const callsign = picked.id.properties.callsign.getValue();
           const flight = visibleFlights.find((item) => item.callsign === callsign);
           if (flight) {
-            setDetail(flight);
+            selectedFlight = flight;
+            renderFlights();
             renderCesiumEntities();
           }
         }
@@ -1240,23 +1042,6 @@
       });
     }
 
-    function setDetail(flight) {
-      const distance = typeof flight.distance === "number" ? flight.distance : distanceMiles(currentLocation, flight);
-      selectedFlight = flight;
-      detailCallsign.textContent = flight.callsign;
-      detailAirline.textContent = flight.airline;
-      detailFrom.textContent = flight.from;
-      detailTo.textContent = flight.to;
-      detailSchedule.textContent = `${flight.fromName} to ${flight.toName}`;
-      detailAltitude.textContent = `${flight.altitude.toLocaleString()} ft`;
-      detailSpeed.textContent = `${flight.speed} kts`;
-      detailHeading.textContent = `${flight.heading} deg`;
-      detailDistance.textContent = `${distance.toFixed(1)} mi`;
-      detailVertical.textContent = flight.vertical;
-      detailSquawk.textContent = flight.squawk;
-      renderFlights();
-    }
-
     function renderFlights() {
       flightCount.textContent = visibleFlights.length;
       if (!visibleFlights.length) {
@@ -1286,7 +1071,7 @@
       locationPostcode.textContent = currentLocation.postcode;
       locationPlace.textContent = currentLocation.label;
       locationCoords.textContent = `${formatCoord(currentLocation.lat, "N", "S")}, ${formatCoord(currentLocation.lon, "E", "W")}`;
-      setDetail(selectedFlight);
+      renderFlights();
       renderCesiumEntities();
       cameraToLocation();
     }
@@ -1313,7 +1098,8 @@
       }
       const flight = visibleFlights.find((item) => item.callsign === row.dataset.callsign);
       if (flight) {
-        setDetail(flight);
+        selectedFlight = flight;
+        renderFlights();
         renderCesiumEntities();
       }
     });
