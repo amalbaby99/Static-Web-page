@@ -362,6 +362,51 @@
       ["Rio", "London"]
     ];
 
+    const landmasses = [
+      [
+        { lat: 72, lon: -168 }, { lat: 69, lon: -140 }, { lat: 60, lon: -124 },
+        { lat: 50, lon: -126 }, { lat: 36, lon: -122 }, { lat: 26, lon: -112 },
+        { lat: 18, lon: -96 }, { lat: 8, lon: -82 }, { lat: 18, lon: -66 },
+        { lat: 30, lon: -78 }, { lat: 44, lon: -70 }, { lat: 58, lon: -60 },
+        { lat: 68, lon: -84 }, { lat: 74, lon: -118 }
+      ],
+      [
+        { lat: 13, lon: -81 }, { lat: 8, lon: -72 }, { lat: 2, lon: -62 },
+        { lat: -8, lon: -54 }, { lat: -18, lon: -44 }, { lat: -34, lon: -50 },
+        { lat: -54, lon: -70 }, { lat: -44, lon: -76 }, { lat: -26, lon: -72 },
+        { lat: -10, lon: -78 }, { lat: 4, lon: -78 }
+      ],
+      [
+        { lat: 72, lon: -10 }, { lat: 65, lon: 20 }, { lat: 55, lon: 42 },
+        { lat: 45, lon: 30 }, { lat: 36, lon: 12 }, { lat: 43, lon: -5 },
+        { lat: 52, lon: -10 }, { lat: 60, lon: -24 }
+      ],
+      [
+        { lat: 35, lon: -17 }, { lat: 31, lon: 10 }, { lat: 22, lon: 34 },
+        { lat: 8, lon: 45 }, { lat: -12, lon: 40 }, { lat: -35, lon: 22 },
+        { lat: -34, lon: 16 }, { lat: -18, lon: 12 }, { lat: -5, lon: 10 },
+        { lat: 8, lon: -8 }, { lat: 22, lon: -16 }
+      ],
+      [
+        { lat: 72, lon: 34 }, { lat: 68, lon: 80 }, { lat: 58, lon: 126 },
+        { lat: 48, lon: 154 }, { lat: 32, lon: 138 }, { lat: 22, lon: 116 },
+        { lat: 8, lon: 104 }, { lat: 6, lon: 78 }, { lat: 22, lon: 68 },
+        { lat: 30, lon: 48 }, { lat: 45, lon: 40 }, { lat: 58, lon: 30 }
+      ],
+      [
+        { lat: 8, lon: 95 }, { lat: 5, lon: 112 }, { lat: -5, lon: 122 },
+        { lat: -10, lon: 115 }, { lat: -4, lon: 102 }
+      ],
+      [
+        { lat: -12, lon: 114 }, { lat: -18, lon: 134 }, { lat: -28, lon: 153 },
+        { lat: -42, lon: 146 }, { lat: -36, lon: 118 }, { lat: -24, lon: 112 }
+      ],
+      [
+        { lat: 82, lon: -62 }, { lat: 78, lon: -28 }, { lat: 68, lon: -20 },
+        { lat: 61, lon: -42 }, { lat: 66, lon: -58 }
+      ]
+    ];
+
     let rotation = { x: -0.25, y: -0.45 };
     let velocity = { x: 0.0008, y: 0.0018 };
     let pointer = null;
@@ -424,6 +469,7 @@
       ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
       ctx.clip();
 
+      drawLandmasses(radius, center);
       drawGraticule(radius, center);
       drawRoutes(radius, center);
       drawCities(radius, center);
@@ -437,9 +483,61 @@
       ctx.stroke();
     }
 
+    function drawLandmasses(radius, center) {
+      landmasses.forEach((land) => {
+        const visiblePoints = land.map((point) => project(point.lat, point.lon, radius, center));
+
+        if (!visiblePoints.some((point) => point.z > -0.2)) {
+          return;
+        }
+
+        ctx.beginPath();
+        visiblePoints.forEach((point, index) => {
+          if (index === 0) {
+            ctx.moveTo(point.x, point.y);
+          } else {
+            ctx.lineTo(point.x, point.y);
+          }
+        });
+        ctx.closePath();
+
+        const averageDepth = visiblePoints.reduce((sum, point) => sum + point.z, 0) / visiblePoints.length;
+        const alpha = Math.max(0.28, Math.min(0.92, 0.52 + averageDepth * 0.34));
+
+        ctx.fillStyle = `rgba(65, 126, 85, ${alpha})`;
+        ctx.strokeStyle = `rgba(174, 222, 174, ${alpha * 0.42})`;
+        ctx.lineWidth = Math.max(1, radius * 0.004);
+        ctx.fill();
+        ctx.stroke();
+      });
+
+      drawPolarCap(radius, center, -74, "rgba(232, 245, 238, 0.5)");
+    }
+
+    function drawPolarCap(radius, center, lat, color) {
+      const points = Array.from({ length: 121 }, (_, i) => ({
+        lat,
+        lon: -180 + i * 3
+      }));
+
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      points.forEach((point, index) => {
+        const projected = project(point.lat, point.lon, radius, center);
+
+        if (index === 0) {
+          ctx.moveTo(projected.x, projected.y);
+        } else {
+          ctx.lineTo(projected.x, projected.y);
+        }
+      });
+      ctx.closePath();
+      ctx.fill();
+    }
+
     function drawGraticule(radius, center) {
       ctx.lineWidth = 1;
-      ctx.strokeStyle = "rgba(180, 230, 214, 0.12)";
+      ctx.strokeStyle = "rgba(218, 241, 235, 0.1)";
 
       for (let lat = -60; lat <= 60; lat += 30) {
         drawGeoLine(radius, center, Array.from({ length: 145 }, (_, i) => ({
