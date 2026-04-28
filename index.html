@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SkyAbove Live Flight Tracker</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.140/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.140/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
   <style>
     :root {
       color-scheme: dark;
@@ -417,54 +419,26 @@
         #03070d;
     }
 
-    .map::before {
-      content: "";
-      position: absolute;
-      left: -5%;
-      right: -8%;
-      top: 5%;
-      height: 68%;
-      border-radius: 50% 50% 46% 46%;
-      background:
-        radial-gradient(ellipse at 56% 44%, rgba(255, 216, 116, 0.5) 0 0.18rem, transparent 0.22rem),
-        radial-gradient(ellipse at 64% 38%, rgba(255, 216, 116, 0.48) 0 0.16rem, transparent 0.2rem),
-        radial-gradient(ellipse at 48% 50%, rgba(255, 216, 116, 0.38) 0 0.14rem, transparent 0.18rem),
-        radial-gradient(ellipse at 45% 52%, rgba(82, 104, 72, 0.9) 0 8%, transparent 8.2%),
-        radial-gradient(ellipse at 55% 48%, rgba(91, 98, 67, 0.88) 0 13%, transparent 13.3%),
-        radial-gradient(ellipse at 67% 55%, rgba(96, 76, 58, 0.82) 0 15%, transparent 15.4%),
-        radial-gradient(ellipse at 50% 34%, #2b6ab5 0, #143b73 38%, #071d3b 64%, #020710 100%);
-      box-shadow: 0 0 2.3rem rgba(45, 147, 255, 0.84), inset 0 0 5rem rgba(6, 17, 35, 0.82);
-      opacity: 0.95;
-      pointer-events: none;
-    }
-
-    .map::after {
-      content: "";
-      position: absolute;
-      left: 2rem;
-      right: 8rem;
-      top: 9rem;
-      height: 45%;
-      background:
-        linear-gradient(155deg, transparent 0 22%, rgba(220, 235, 255, 0.28) 22.2% 22.6%, transparent 22.8%),
-        linear-gradient(145deg, transparent 0 42%, rgba(220, 235, 255, 0.2) 42.2% 42.6%, transparent 42.8%),
-        linear-gradient(18deg, transparent 0 58%, rgba(220, 235, 255, 0.22) 58.2% 58.6%, transparent 58.8%);
-      pointer-events: none;
-      opacity: 0.9;
-    }
-
-    canvas {
+    #cesiumContainer {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
-      cursor: grab;
-      touch-action: none;
       z-index: 1;
     }
 
-    canvas:active {
-      cursor: grabbing;
+    .cesium-viewer,
+    .cesium-viewer-cesiumWidgetContainer,
+    .cesium-widget,
+    .cesium-widget canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    .cesium-widget-credits,
+    .cesium-viewer-bottom,
+    .cesium-viewer-toolbar {
+      display: none !important;
     }
 
     .compass {
@@ -838,7 +812,7 @@
       </aside>
 
       <section class="map" aria-label="Interactive flight map">
-        <canvas id="mapCanvas"></canvas>
+        <div id="cesiumContainer"></div>
 
         <div class="compass" aria-hidden="true">A</div>
 
@@ -903,8 +877,6 @@
   </div>
 
   <script>
-    const canvas = document.getElementById("mapCanvas");
-    const ctx = canvas.getContext("2d");
     const form = document.getElementById("postcodeForm");
     const postcodeInput = document.getElementById("postcode");
     const clock = document.getElementById("clock");
@@ -944,18 +916,11 @@
       { callsign: "TOM7KD", airline: "TUI Airways", from: "CWL", to: "PMI", fromName: "Cardiff", toName: "Palma", aircraft: "Boeing 737", altitude: 30000, speed: 447, heading: 149, vertical: "+320 ft/min", squawk: "2105", lat: 51.13, lon: -3.55, origin: { lat: 51.3967, lon: -3.3433 }, destination: { lat: 39.5517, lon: 2.7388 } }
     ];
 
-    const land = [
-      [[50.1, -5.7], [51.7, -5.1], [53.6, -4.2], [55.7, -5.6], [58.4, -4.4], [58.7, -2.3], [57.6, -1.5], [55.0, -1.4], [53.2, 0.3], [51.4, 1.1], [50.1, -0.6]],
-      [[51.4, -10.4], [53.4, -9.8], [55.2, -8.1], [55.3, -6.1], [53.7, -5.7], [51.4, -6.7]],
-      [[36.0, -9.5], [43.8, -9.0], [48.8, -4.5], [51.2, 2.2], [53.8, 6.8], [56.3, 10.2], [58.8, 18.2], [60.1, 30.1], [54.3, 37.8], [47.2, 29.5], [45.3, 14.6], [41.8, 12.5], [40.4, 0.1], [36.0, -5.8]],
-      [[35.8, -5.8], [36.6, 10.2], [32.0, 25.2], [26.0, 31.5], [21.0, 17.0], [26.2, 2.0], [31.6, -8.8]]
-    ];
-
     let location = postcodeLocations.SW1A1AA;
     let visibleFlights = [];
     let selectedFlight = null;
-    let drag = null;
-    let offset = { x: 0, y: 0 };
+    let viewer = null;
+    let flightEntities = new Map();
 
     function normalisePostcode(value) {
       return value.replace(/\s+/g, "").toUpperCase();
@@ -986,163 +951,156 @@
       return `${Math.abs(value).toFixed(4)} ${value >= 0 ? positive : negative}`;
     }
 
-    function project(point) {
-      const rect = canvas.getBoundingClientRect();
-      const scale = Math.min(rect.width / 42, rect.height / 24);
-      const centerLat = location.lat - 4;
-      const centerLon = location.lon + 8;
-      return {
-        x: rect.width / 2 + (point.lon - centerLon) * scale * 1.45 + offset.x,
-        y: rect.height / 2 - (point.lat - centerLat) * scale * 1.9 + offset.y
-      };
-    }
-
-    function drawStars(width, height) {
-      ctx.fillStyle = "#02070d";
-      ctx.fillRect(0, 0, width, height);
-      ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
-      for (let i = 0; i < 220; i += 1) {
-        const x = (i * 97) % width;
-        const y = (i * 53) % Math.max(1, height * 0.55);
-        const size = i % 11 === 0 ? 1.6 : 0.8;
-        ctx.globalAlpha = i % 5 === 0 ? 0.85 : 0.38;
-        ctx.fillRect(x, y, size, size);
+    function initCesium() {
+      if (!window.Cesium) {
+        return;
       }
-      ctx.globalAlpha = 1;
-    }
 
-    function drawEarth(width, height) {
-      const cx = width * 0.61 + offset.x * 0.15;
-      const cy = height * 0.97 + offset.y * 0.08;
-      const rx = width * 0.72;
-      const ry = height * 0.82;
-      const earth = ctx.createRadialGradient(cx - rx * 0.2, cy - ry * 0.58, 40, cx, cy, rx);
-      earth.addColorStop(0, "#245ba0");
-      earth.addColorStop(0.42, "#113363");
-      earth.addColorStop(0.74, "#07182f");
-      earth.addColorStop(1, "#020711");
-
-      ctx.save();
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, rx, ry, 0, Math.PI, Math.PI * 2);
-      ctx.fillStyle = earth;
-      ctx.shadowColor = "rgba(45, 147, 255, 0.9)";
-      ctx.shadowBlur = 26;
-      ctx.fill();
-      ctx.clip();
-
-      land.forEach((shape) => {
-        ctx.beginPath();
-        shape.forEach(([lat, lon], index) => {
-          const p = project({ lat, lon });
-          if (index === 0) {
-            ctx.moveTo(p.x, p.y);
-          } else {
-            ctx.lineTo(p.x, p.y);
-          }
-        });
-        ctx.closePath();
-        ctx.fillStyle = "rgba(88, 93, 68, 0.86)";
-        ctx.strokeStyle = "rgba(234, 218, 160, 0.35)";
-        ctx.lineWidth = 1;
-        ctx.fill();
-        ctx.stroke();
+      viewer = new Cesium.Viewer("cesiumContainer", {
+        animation: false,
+        baseLayerPicker: false,
+        fullscreenButton: false,
+        geocoder: false,
+        homeButton: false,
+        infoBox: false,
+        sceneModePicker: false,
+        selectionIndicator: false,
+        timeline: false,
+        navigationHelpButton: false,
+        shouldAnimate: true,
+        baseLayer: false,
+        terrainProvider: new Cesium.EllipsoidTerrainProvider()
       });
 
-      for (let i = 0; i < 80; i += 1) {
-        const p = project({ lat: 35 + ((i * 13) % 24), lon: -8 + ((i * 17) % 45) });
-        ctx.fillStyle = "rgba(255, 204, 90, 0.38)";
-        ctx.fillRect(p.x, p.y, 1.7, 1.7);
+      viewer.imageryLayers.addImageryProvider(new Cesium.OpenStreetMapImageryProvider({
+        url: "https://tile.openstreetmap.org/"
+      }));
+
+      viewer.scene.globe.enableLighting = true;
+      viewer.scene.skyAtmosphere.show = true;
+      viewer.scene.globe.depthTestAgainstTerrain = false;
+      viewer.scene.screenSpaceCameraController.minimumZoomDistance = 300000;
+      viewer.scene.screenSpaceCameraController.maximumZoomDistance = 14000000;
+
+      const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+      handler.setInputAction((movement) => {
+        const picked = viewer.scene.pick(movement.position);
+        if (Cesium.defined(picked) && picked.id && picked.id.properties && picked.id.properties.callsign) {
+          const callsign = picked.id.properties.callsign.getValue();
+          const flight = visibleFlights.find((item) => item.callsign === callsign);
+          if (flight) {
+            setDetail(flight);
+            renderCesiumEntities();
+          }
+        }
+      }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+    }
+
+    function cameraToLocation() {
+      if (!viewer) {
+        return;
       }
 
-      ctx.restore();
-
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, rx, ry, 0, Math.PI, Math.PI * 2);
-      ctx.strokeStyle = "rgba(86, 174, 255, 0.85)";
-      ctx.lineWidth = 3;
-      ctx.stroke();
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(location.lon - 3.5, location.lat - 2.2, 2100000),
+        orientation: {
+          heading: Cesium.Math.toRadians(20),
+          pitch: Cesium.Math.toRadians(-48),
+          roll: 0
+        },
+        duration: 1.2
+      });
     }
 
-    function drawRoute(flight, isSelected) {
-      const start = project(flight.origin);
-      const end = project(flight.destination);
-      const control = {
-        x: (start.x + end.x) / 2,
-        y: Math.min(start.y, end.y) - 90
-      };
-
-      ctx.beginPath();
-      ctx.moveTo(start.x, start.y);
-      ctx.quadraticCurveTo(control.x, control.y, end.x, end.y);
-      ctx.strokeStyle = isSelected ? "rgba(255, 255, 255, 0.72)" : "rgba(200, 220, 245, 0.26)";
-      ctx.lineWidth = isSelected ? 2.2 : 1.4;
-      ctx.stroke();
+    function routePositions(flight) {
+      return Cesium.Cartesian3.fromDegreesArrayHeights([
+        flight.origin.lon, flight.origin.lat, 12000,
+        flight.lon, flight.lat, flight.altitude * 0.3048,
+        flight.destination.lon, flight.destination.lat, 12000
+      ]);
     }
 
-    function drawPlane(flight, isSelected) {
-      const p = project(flight);
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(toRadians(flight.heading));
-      ctx.fillStyle = isSelected ? "#ffd767" : "#ffc640";
-      ctx.shadowColor = "rgba(255, 198, 64, 0.7)";
-      ctx.shadowBlur = isSelected ? 18 : 8;
-      ctx.beginPath();
-      ctx.moveTo(0, -12);
-      ctx.lineTo(4, 5);
-      ctx.lineTo(15, 12);
-      ctx.lineTo(3, 12);
-      ctx.lineTo(0, 19);
-      ctx.lineTo(-3, 12);
-      ctx.lineTo(-15, 12);
-      ctx.lineTo(-4, 5);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-    }
-
-    function drawLocation() {
-      const p = project(location);
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 84, 0, Math.PI * 2);
-      ctx.setLineDash([8, 6]);
-      ctx.strokeStyle = "rgba(210, 225, 245, 0.72)";
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = "#2d93ff";
-      ctx.strokeStyle = "#cde7ff";
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(p.x, p.y + 34);
-      ctx.bezierCurveTo(p.x - 28, p.y - 4, p.x - 18, p.y - 34, p.x, p.y - 34);
-      ctx.bezierCurveTo(p.x + 18, p.y - 34, p.x + 28, p.y - 4, p.x, p.y + 34);
-      ctx.fill();
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(p.x, p.y - 11, 8, 0, Math.PI * 2);
-      ctx.fillStyle = "#d9efff";
-      ctx.fill();
-      ctx.restore();
-    }
-
-    function draw() {
-      const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
-        canvas.width = Math.round(rect.width * dpr);
-        canvas.height = Math.round(rect.height * dpr);
+    function renderCesiumEntities() {
+      if (!viewer) {
+        return;
       }
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      drawStars(rect.width, rect.height);
-      drawEarth(rect.width, rect.height);
-      visibleFlights.forEach((flight) => drawRoute(flight, selectedFlight && flight.callsign === selectedFlight.callsign));
-      drawLocation();
-      visibleFlights.forEach((flight) => drawPlane(flight, selectedFlight && flight.callsign === selectedFlight.callsign));
-      requestAnimationFrame(draw);
+      viewer.entities.removeAll();
+      flightEntities = new Map();
+
+      viewer.entities.add({
+        id: "search-location",
+        name: location.postcode,
+        position: Cesium.Cartesian3.fromDegrees(location.lon, location.lat, 1200),
+        point: {
+          pixelSize: 16,
+          color: Cesium.Color.DODGERBLUE,
+          outlineColor: Cesium.Color.WHITE,
+          outlineWidth: 3,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY
+        },
+        label: {
+          text: location.postcode,
+          font: "700 14px sans-serif",
+          fillColor: Cesium.Color.WHITE,
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 3,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          pixelOffset: new Cesium.Cartesian2(0, -34),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY
+        },
+        ellipse: {
+          semiMajorAxis: 160934,
+          semiMinorAxis: 160934,
+          material: Cesium.Color.DODGERBLUE.withAlpha(0.08),
+          outline: true,
+          outlineColor: Cesium.Color.LIGHTSKYBLUE.withAlpha(0.75),
+          height: 0
+        }
+      });
+
+      visibleFlights.forEach((flight) => {
+        const isSelected = selectedFlight && selectedFlight.callsign === flight.callsign;
+
+        viewer.entities.add({
+          id: `${flight.callsign}-route`,
+          polyline: {
+            positions: routePositions(flight),
+            width: isSelected ? 4 : 2,
+            arcType: Cesium.ArcType.GEODESIC,
+            material: isSelected ? Cesium.Color.WHITE.withAlpha(0.82) : Cesium.Color.LIGHTSKYBLUE.withAlpha(0.38)
+          }
+        });
+
+        const entity = viewer.entities.add({
+          id: flight.callsign,
+          name: flight.callsign,
+          position: Cesium.Cartesian3.fromDegrees(flight.lon, flight.lat, flight.altitude * 0.3048),
+          properties: {
+            callsign: flight.callsign
+          },
+          point: {
+            pixelSize: isSelected ? 17 : 13,
+            color: Cesium.Color.fromCssColorString("#ffc640"),
+            outlineColor: Cesium.Color.BLACK,
+            outlineWidth: 2,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
+          },
+          label: {
+            text: ">",
+            font: "900 28px sans-serif",
+            fillColor: Cesium.Color.fromCssColorString("#ffc640"),
+            outlineColor: Cesium.Color.BLACK,
+            outlineWidth: 3,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            pixelOffset: new Cesium.Cartesian2(0, -18),
+            rotation: Cesium.Math.toRadians(flight.heading - 90),
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
+          }
+        });
+
+        flightEntities.set(flight.callsign, entity);
+      });
     }
 
     function setDetail(flight) {
@@ -1192,6 +1150,8 @@
       locationPlace.textContent = location.label;
       locationCoords.textContent = `${formatCoord(location.lat, "N", "S")}, ${formatCoord(location.lon, "E", "W")}`;
       setDetail(selectedFlight);
+      renderCesiumEntities();
+      cameraToLocation();
     }
 
     form.addEventListener("submit", (event) => {
@@ -1217,35 +1177,18 @@
       const flight = visibleFlights.find((item) => item.callsign === row.dataset.callsign);
       if (flight) {
         setDetail(flight);
+        renderCesiumEntities();
       }
-    });
-
-    canvas.addEventListener("pointerdown", (event) => {
-      canvas.setPointerCapture(event.pointerId);
-      drag = { x: event.clientX, y: event.clientY };
-    });
-
-    canvas.addEventListener("pointermove", (event) => {
-      if (!drag) {
-        return;
-      }
-      offset.x += event.clientX - drag.x;
-      offset.y += event.clientY - drag.y;
-      drag = { x: event.clientX, y: event.clientY };
-    });
-
-    canvas.addEventListener("pointerup", () => {
-      drag = null;
     });
 
     function updateClock() {
       clock.textContent = `${new Date().toISOString().slice(11, 19)} UTC`;
     }
 
+    initCesium();
     updateLocation(location);
     updateClock();
     setInterval(updateClock, 1000);
-    draw();
   </script>
 </body>
 </html>
