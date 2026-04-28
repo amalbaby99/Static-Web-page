@@ -410,7 +410,47 @@
       position: relative;
       min-width: 0;
       overflow: hidden;
-      background: #03070d;
+      background:
+        radial-gradient(circle at 42% 21%, rgba(255, 255, 255, 0.8) 0 1px, transparent 2px),
+        radial-gradient(circle at 74% 14%, rgba(255, 255, 255, 0.55) 0 1px, transparent 2px),
+        radial-gradient(circle at 62% 34%, rgba(255, 255, 255, 0.45) 0 1px, transparent 2px),
+        #03070d;
+    }
+
+    .map::before {
+      content: "";
+      position: absolute;
+      left: -5%;
+      right: -8%;
+      top: 5%;
+      height: 68%;
+      border-radius: 50% 50% 46% 46%;
+      background:
+        radial-gradient(ellipse at 56% 44%, rgba(255, 216, 116, 0.5) 0 0.18rem, transparent 0.22rem),
+        radial-gradient(ellipse at 64% 38%, rgba(255, 216, 116, 0.48) 0 0.16rem, transparent 0.2rem),
+        radial-gradient(ellipse at 48% 50%, rgba(255, 216, 116, 0.38) 0 0.14rem, transparent 0.18rem),
+        radial-gradient(ellipse at 45% 52%, rgba(82, 104, 72, 0.9) 0 8%, transparent 8.2%),
+        radial-gradient(ellipse at 55% 48%, rgba(91, 98, 67, 0.88) 0 13%, transparent 13.3%),
+        radial-gradient(ellipse at 67% 55%, rgba(96, 76, 58, 0.82) 0 15%, transparent 15.4%),
+        radial-gradient(ellipse at 50% 34%, #2b6ab5 0, #143b73 38%, #071d3b 64%, #020710 100%);
+      box-shadow: 0 0 2.3rem rgba(45, 147, 255, 0.84), inset 0 0 5rem rgba(6, 17, 35, 0.82);
+      opacity: 0.95;
+      pointer-events: none;
+    }
+
+    .map::after {
+      content: "";
+      position: absolute;
+      left: 2rem;
+      right: 8rem;
+      top: 9rem;
+      height: 45%;
+      background:
+        linear-gradient(155deg, transparent 0 22%, rgba(220, 235, 255, 0.28) 22.2% 22.6%, transparent 22.8%),
+        linear-gradient(145deg, transparent 0 42%, rgba(220, 235, 255, 0.2) 42.2% 42.6%, transparent 42.8%),
+        linear-gradient(18deg, transparent 0 58%, rgba(220, 235, 255, 0.22) 58.2% 58.6%, transparent 58.8%);
+      pointer-events: none;
+      opacity: 0.9;
     }
 
     canvas {
@@ -420,6 +460,7 @@
       height: 100%;
       cursor: grab;
       touch-action: none;
+      z-index: 1;
     }
 
     canvas:active {
@@ -742,9 +783,43 @@
         <section class="card flight-list" aria-label="Aircraft overhead">
           <div class="section-title">
             <span>Aircraft Overhead</span>
-            <span class="badge" id="flightCount">0</span>
+            <span class="badge" id="flightCount">3</span>
           </div>
-          <div id="flightRows"></div>
+          <div id="flightRows">
+            <div class="flight-row active" data-callsign="VIR27TY">
+              <div class="plane" aria-hidden="true">&gt;</div>
+              <div>
+                <p class="flight-id">VIR27TY</p>
+                <p class="airline">Virgin Atlantic</p>
+              </div>
+              <div class="flight-values">
+                <strong>37,000 ft</strong>
+                <span>478 kts - 46.8 mi</span>
+              </div>
+            </div>
+            <div class="flight-row" data-callsign="BAW142">
+              <div class="plane" aria-hidden="true">&gt;</div>
+              <div>
+                <p class="flight-id">BAW142</p>
+                <p class="airline">British Airways</p>
+              </div>
+              <div class="flight-values">
+                <strong>36,000 ft</strong>
+                <span>466 kts - 58.2 mi</span>
+              </div>
+            </div>
+            <div class="flight-row" data-callsign="AFR1567">
+              <div class="plane" aria-hidden="true">&gt;</div>
+              <div>
+                <p class="flight-id">AFR1567</p>
+                <p class="airline">Air France</p>
+              </div>
+              <div class="flight-values">
+                <strong>38,000 ft</strong>
+                <span>467 kts - 74.2 mi</span>
+              </div>
+            </div>
+          </div>
           <button class="view-all" type="button">View all aircraft</button>
         </section>
 
@@ -1064,13 +1139,14 @@
 
       drawStars(rect.width, rect.height);
       drawEarth(rect.width, rect.height);
-      visibleFlights.forEach((flight) => drawRoute(flight, flight.callsign === selectedFlight.callsign));
+      visibleFlights.forEach((flight) => drawRoute(flight, selectedFlight && flight.callsign === selectedFlight.callsign));
       drawLocation();
-      visibleFlights.forEach((flight) => drawPlane(flight, flight.callsign === selectedFlight.callsign));
+      visibleFlights.forEach((flight) => drawPlane(flight, selectedFlight && flight.callsign === selectedFlight.callsign));
       requestAnimationFrame(draw);
     }
 
     function setDetail(flight) {
+      const distance = typeof flight.distance === "number" ? flight.distance : distanceMiles(location, flight);
       selectedFlight = flight;
       detailCallsign.textContent = flight.callsign;
       detailAirline.textContent = flight.airline;
@@ -1080,7 +1156,7 @@
       detailAltitude.textContent = `${flight.altitude.toLocaleString()} ft`;
       detailSpeed.textContent = `${flight.speed} kts`;
       detailHeading.textContent = `${flight.heading} deg`;
-      detailDistance.textContent = `${flight.distance.toFixed(1)} mi`;
+      detailDistance.textContent = `${distance.toFixed(1)} mi`;
       detailVertical.textContent = flight.vertical;
       detailSquawk.textContent = flight.squawk;
       renderFlights();
@@ -1095,7 +1171,7 @@
 
       flightRows.innerHTML = visibleFlights.map((flight) => `
         <div class="flight-row ${selectedFlight && selectedFlight.callsign === flight.callsign ? "active" : ""}" data-callsign="${flight.callsign}">
-          <div class="plane" aria-hidden="true">></div>
+          <div class="plane" aria-hidden="true">&gt;</div>
           <div>
             <p class="flight-id">${flight.callsign}</p>
             <p class="airline">${flight.airline}</p>
@@ -1111,7 +1187,7 @@
     function updateLocation(nextLocation) {
       location = nextLocation;
       visibleFlights = getNearbyFlights();
-      selectedFlight = visibleFlights[0] || flights[0];
+      selectedFlight = visibleFlights[0] || { ...flights[0], distance: distanceMiles(location, flights[0]) };
       locationPostcode.textContent = location.postcode;
       locationPlace.textContent = location.label;
       locationCoords.textContent = `${formatCoord(location.lat, "N", "S")}, ${formatCoord(location.lon, "E", "W")}`;
