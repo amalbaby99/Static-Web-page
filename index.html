@@ -3,19 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flight Route Globe</title>
+  <title>SkyAbove Live Flight Tracker</title>
   <style>
     :root {
       color-scheme: dark;
-      --bg: #09110f;
-      --panel: #101916;
-      --panel-border: #20342e;
-      --text: #f2f7f4;
-      --muted: #9db4aa;
-      --accent: #4fd1a5;
-      --accent-strong: #8ff0cf;
-      --route: #f6c85f;
-      --danger: #ff7a7a;
+      --bg: #02070d;
+      --panel: rgba(9, 17, 29, 0.86);
+      --panel-strong: rgba(11, 21, 35, 0.96);
+      --line: rgba(120, 154, 196, 0.22);
+      --text: #edf5ff;
+      --muted: #9fb0c6;
+      --blue: #2d93ff;
+      --blue-soft: rgba(45, 147, 255, 0.18);
+      --green: #2ddd72;
+      --amber: #ffc640;
     }
 
     * {
@@ -25,207 +26,398 @@
     body {
       margin: 0;
       min-height: 100vh;
+      overflow: hidden;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background:
-        radial-gradient(circle at 70% 20%, rgba(79, 209, 165, 0.14), transparent 34rem),
-        linear-gradient(145deg, #070c0b 0%, var(--bg) 54%, #11140b 100%);
+      background: #01050a;
       color: var(--text);
     }
 
-    .page {
-      min-height: 100vh;
-      display: grid;
-      grid-template-columns: minmax(20rem, 27rem) minmax(0, 1fr);
+    button,
+    input {
+      font: inherit;
     }
 
-    .sidebar {
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: 5rem minmax(0, 1fr) 2.8rem;
+      background:
+        radial-gradient(circle at 60% 8%, rgba(45, 147, 255, 0.22), transparent 24rem),
+        linear-gradient(180deg, #050a12 0%, #02070d 100%);
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 18rem minmax(18rem, 40rem) 1fr auto;
+      align-items: center;
       gap: 2rem;
-      padding: 2rem;
-      background: rgba(16, 25, 22, 0.84);
-      border-right: 1px solid var(--panel-border);
+      padding: 0.9rem 1.8rem;
+      border-bottom: 1px solid var(--line);
+      background: rgba(2, 7, 13, 0.82);
       backdrop-filter: blur(18px);
+      z-index: 3;
     }
 
     .brand {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      color: var(--accent-strong);
-      font-weight: 700;
-      letter-spacing: 0;
+      min-width: 0;
     }
 
-    .brand-mark {
-      width: 2.25rem;
-      height: 2.25rem;
-      border: 1px solid rgba(143, 240, 207, 0.5);
+    .logo {
+      width: 3rem;
+      height: 3rem;
+      border: 2px solid var(--blue);
       border-radius: 50%;
       display: grid;
       place-items: center;
-      background: rgba(79, 209, 165, 0.12);
+      color: #d9ecff;
+      background: radial-gradient(circle, rgba(45, 147, 255, 0.3), rgba(45, 147, 255, 0.08));
+      box-shadow: 0 0 24px rgba(45, 147, 255, 0.35);
+      font-size: 1.4rem;
+      font-weight: 900;
     }
 
-    h1 {
-      margin: 3rem 0 1rem;
-      max-width: 11ch;
-      font-size: clamp(2.75rem, 7vw, 5rem);
-      line-height: 0.92;
-      letter-spacing: 0;
-    }
-
-    .intro {
+    .brand-title {
       margin: 0;
-      max-width: 34rem;
+      font-size: 1.9rem;
+      line-height: 1;
+      letter-spacing: 0;
+      font-weight: 850;
+    }
+
+    .brand-title span {
+      color: var(--blue);
+    }
+
+    .brand-subtitle {
+      margin: 0.35rem 0 0;
       color: var(--muted);
-      font-size: 1rem;
-      line-height: 1.65;
+      font-size: 0.73rem;
+      font-weight: 800;
+      letter-spacing: 0.14rem;
+      text-transform: uppercase;
     }
 
-    .search-panel {
-      margin-top: 2rem;
-      padding: 1rem;
-      border: 1px solid var(--panel-border);
-      border-radius: 0.5rem;
-      background: rgba(9, 17, 15, 0.72);
-    }
-
-    label {
-      display: block;
-      margin-bottom: 0.5rem;
-      color: var(--accent-strong);
-      font-size: 0.88rem;
-      font-weight: 700;
-    }
-
-    .input-row {
+    .search {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 0.6rem;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 0.65rem;
+      height: 3.05rem;
+      padding: 0.35rem;
+      border: 1px solid rgba(120, 154, 196, 0.35);
+      border-radius: 0.6rem;
+      background: rgba(10, 18, 32, 0.94);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
     }
 
-    input {
-      width: 100%;
+    .search input {
       min-width: 0;
-      height: 2.75rem;
-      border: 1px solid #2b443c;
-      border-radius: 0.4rem;
-      padding: 0 0.85rem;
-      background: #07100d;
-      color: var(--text);
-      font: inherit;
-      outline: none;
-    }
-
-    input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(79, 209, 165, 0.18);
-    }
-
-    button {
-      height: 2.75rem;
+      height: 100%;
       border: 0;
-      border-radius: 0.4rem;
-      padding: 0 1rem;
-      background: var(--accent);
-      color: #062019;
-      font: inherit;
+      outline: 0;
+      padding: 0 0.8rem;
+      background: transparent;
+      color: var(--text);
+    }
+
+    .search input::placeholder {
+      color: #bdc9da;
+    }
+
+    .search button {
+      height: 100%;
+      border: 0;
+      border-radius: 0.45rem;
+      padding: 0 1.25rem;
+      background: linear-gradient(180deg, #38a0ff, #1879e8);
+      color: #fff;
       font-weight: 800;
       cursor: pointer;
+      box-shadow: 0 0 16px rgba(45, 147, 255, 0.35);
     }
 
-    button:hover {
-      background: var(--accent-strong);
+    .nav {
+      justify-self: end;
+      display: flex;
+      gap: 2rem;
+      color: #c7d4e5;
+      font-size: 0.94rem;
     }
 
-    .message {
-      min-height: 1.35rem;
-      margin: 0.75rem 0 0;
-      color: var(--muted);
-      font-size: 0.88rem;
-      line-height: 1.45;
-    }
-
-    .stats {
+    .nav span {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.75rem;
-      margin-top: 2rem;
+      gap: 0.3rem;
+      justify-items: center;
     }
 
-    .stat {
-      padding: 0.85rem;
-      border: 1px solid var(--panel-border);
+    .live {
+      display: grid;
+      gap: 0.25rem;
+      min-width: 7.2rem;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--line);
+      border-radius: 0.55rem;
+      background: rgba(9, 17, 29, 0.82);
+      text-align: center;
+    }
+
+    .live strong {
+      color: #fff;
+      font-size: 0.85rem;
+    }
+
+    .live strong::before {
+      content: "";
+      display: inline-block;
+      width: 0.55rem;
+      height: 0.55rem;
+      margin-right: 0.45rem;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 12px var(--green);
+    }
+
+    .live span {
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .workspace {
+      position: relative;
+      display: grid;
+      grid-template-columns: 25rem minmax(0, 1fr);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      z-index: 2;
+      display: grid;
+      grid-template-rows: auto auto minmax(4rem, 1fr) auto;
+      gap: 1rem;
+      padding: 1rem;
+      border-right: 1px solid var(--line);
+      background: rgba(3, 9, 16, 0.78);
+      backdrop-filter: blur(18px);
+      min-height: 0;
+    }
+
+    .card {
+      border: 1px solid var(--line);
       border-radius: 0.5rem;
+      background: var(--panel);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+    }
+
+    .location-card {
+      padding: 1.25rem;
+    }
+
+    .eyebrow {
+      margin: 0 0 1rem;
+      color: #c5d4e9;
+      font-size: 0.78rem;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .postcode {
+      margin: 0;
+      font-size: 1.8rem;
+      line-height: 1.05;
+      font-weight: 750;
+    }
+
+    .place {
+      margin: 0.35rem 0 1.25rem;
+      color: var(--muted);
+    }
+
+    .coords {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--line);
+      color: #d7e3f3;
+    }
+
+    .target {
+      width: 2.1rem;
+      height: 2.1rem;
+      border: 1px solid var(--line);
+      border-radius: 0.45rem;
+      display: grid;
+      place-items: center;
+      color: #cfe1f8;
       background: rgba(255, 255, 255, 0.03);
     }
 
-    .stat strong {
-      display: block;
-      font-size: 1.35rem;
-      color: var(--text);
+    .radius-row {
+      margin-top: 1rem;
+      color: #d7e3f3;
     }
 
-    .stat span {
+    .range {
+      position: relative;
+      height: 0.3rem;
+      margin-top: 1rem;
+      border-radius: 1rem;
+      background: rgba(120, 154, 196, 0.14);
+      overflow: hidden;
+    }
+
+    .range::before {
+      content: "";
+      position: absolute;
+      inset: 0 40% 0 0;
+      border-radius: inherit;
+      background: var(--blue);
+    }
+
+    .range::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 60%;
+      width: 0.86rem;
+      height: 0.86rem;
+      transform: translate(-50%, -50%);
+      border: 3px solid #c9e3ff;
+      border-radius: 50%;
+      background: var(--blue);
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.8rem 1rem;
+      border-bottom: 1px solid var(--line);
+      color: #cbd9eb;
+      font-size: 0.92rem;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .badge {
+      min-width: 1.6rem;
+      padding: 0.18rem 0.5rem;
+      border-radius: 999px;
+      background: var(--blue);
+      color: #fff;
+      text-align: center;
+      font-size: 0.78rem;
+    }
+
+    .flight-list {
+      min-height: 0;
+      overflow: auto;
+    }
+
+    .flight-row {
+      display: grid;
+      grid-template-columns: 2.4rem 1fr auto;
+      gap: 0.75rem;
+      align-items: center;
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid rgba(120, 154, 196, 0.14);
+      cursor: pointer;
+    }
+
+    .flight-row:hover,
+    .flight-row.active {
+      background: rgba(45, 147, 255, 0.12);
+    }
+
+    .plane {
+      color: var(--amber);
+      font-size: 1.6rem;
+      line-height: 1;
+    }
+
+    .flight-id {
+      margin: 0;
+      color: var(--text);
+      font-weight: 850;
+    }
+
+    .airline {
+      margin: 0.15rem 0 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .flight-values {
+      text-align: right;
+    }
+
+    .flight-values strong {
+      display: block;
+      color: #edf5ff;
+      font-weight: 750;
+    }
+
+    .flight-values span {
+      display: block;
+      margin-top: 0.2rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .view-all {
+      width: calc(100% - 1.5rem);
+      margin: 0.75rem;
+      height: 2.5rem;
+      border: 1px solid var(--line);
+      border-radius: 0.45rem;
+      background: rgba(255, 255, 255, 0.03);
+      color: #d7e3f3;
+      cursor: pointer;
+    }
+
+    .data-card {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      padding: 1rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .data-card strong {
       display: block;
       margin-top: 0.25rem;
-      color: var(--muted);
-      font-size: 0.78rem;
-    }
-
-    .route-list {
-      margin: 2rem 0 0;
-      padding: 0;
-      list-style: none;
-      display: grid;
-      gap: 0.75rem;
-    }
-
-    .route-list li {
-      display: grid;
-      gap: 0.35rem;
-      padding-bottom: 0.75rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    .route-list b {
       color: var(--text);
-      font-weight: 700;
+      font-size: 0.95rem;
+      font-weight: 650;
     }
 
-    .flight-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.45rem;
+    .status-dot {
+      display: inline-block;
+      width: 0.75rem;
+      height: 0.75rem;
+      margin-right: 0.45rem;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 12px var(--green);
     }
 
-    .flight-meta span {
-      padding: 0.22rem 0.45rem;
-      border: 1px solid rgba(143, 240, 207, 0.18);
-      border-radius: 0.35rem;
-      color: var(--muted);
-      font-size: 0.78rem;
-    }
-
-    .globe-stage {
+    .map {
       position: relative;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
+      min-width: 0;
       overflow: hidden;
-      padding: 2rem;
+      background: #03070d;
     }
 
     canvas {
-      width: min(70vw, 52rem);
-      height: min(70vw, 52rem);
-      max-width: calc(100vw - 4rem);
-      max-height: calc(100vh - 4rem);
-      aspect-ratio: 1;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
       cursor: grab;
       touch-action: none;
     }
@@ -234,653 +426,749 @@
       cursor: grabbing;
     }
 
-    .globe-hint {
+    .compass {
       position: absolute;
-      right: 2rem;
-      bottom: 2rem;
-      max-width: 18rem;
-      color: var(--muted);
-      font-size: 0.85rem;
-      line-height: 1.5;
+      top: 1.5rem;
+      right: 1.9rem;
+      width: 4.8rem;
+      height: 4.8rem;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(5, 12, 22, 0.72);
+      color: #d9e9fb;
+      font-size: 1.8rem;
+      z-index: 2;
     }
 
-    @media (max-width: 860px) {
-      .page {
+    .compass::before {
+      content: "N";
+      position: absolute;
+      top: 0.35rem;
+      color: #ff7070;
+      font-size: 0.7rem;
+      font-weight: 900;
+    }
+
+    .tool-stack {
+      position: absolute;
+      top: 7.3rem;
+      right: 2.1rem;
+      z-index: 2;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 0.6rem;
+      background: rgba(6, 14, 24, 0.88);
+    }
+
+    .tool-stack button {
+      display: grid;
+      place-items: center;
+      gap: 0.25rem;
+      width: 4rem;
+      min-height: 4rem;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      background: transparent;
+      color: #cbd9eb;
+      cursor: pointer;
+    }
+
+    .tool-stack button.active {
+      background: var(--blue-soft);
+      color: #5eb2ff;
+    }
+
+    .zoom {
+      position: absolute;
+      right: 2.1rem;
+      bottom: 10rem;
+      z-index: 2;
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    .zoom button {
+      width: 3.2rem;
+      height: 3.2rem;
+      border: 1px solid var(--line);
+      border-radius: 0.45rem;
+      background: rgba(6, 14, 24, 0.9);
+      color: #fff;
+      font-size: 1.7rem;
+      cursor: pointer;
+    }
+
+    .detail {
+      position: absolute;
+      left: 1rem;
+      right: 1rem;
+      bottom: 1rem;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 19rem minmax(14rem, 20rem) 1fr;
+      gap: 1.5rem;
+      align-items: center;
+      padding: 1.05rem 1.4rem;
+      border: 1px solid var(--line);
+      border-radius: 0.55rem;
+      background: rgba(5, 12, 22, 0.94);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
+    }
+
+    .detail h2 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    .pill {
+      display: inline-block;
+      margin-left: 0.55rem;
+      padding: 0.25rem 0.45rem;
+      border-radius: 999px;
+      background: rgba(45, 221, 114, 0.22);
+      color: #b8f8ce;
+      font-size: 0.7rem;
+      font-weight: 900;
+      vertical-align: middle;
+    }
+
+    .route {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 0.7rem;
+      margin-top: 0.8rem;
+      font-size: 1.9rem;
+      font-weight: 850;
+    }
+
+    .route-line {
+      height: 1px;
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.15));
+      position: relative;
+    }
+
+    .route-line::after {
+      content: ">";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -55%);
+      color: #fff;
+      font-size: 1.25rem;
+    }
+
+    .aircraft-photo {
+      height: 7.8rem;
+      border-radius: 0.5rem;
+      background:
+        linear-gradient(12deg, transparent 42%, #f8fbff 43% 52%, transparent 53%),
+        linear-gradient(150deg, transparent 48%, #d51d35 49% 54%, transparent 55%),
+        linear-gradient(180deg, #90c6ee, #d7ecff);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .aircraft-photo::before {
+      content: "";
+      position: absolute;
+      left: 3.2rem;
+      top: 4.1rem;
+      width: 9rem;
+      height: 1.35rem;
+      border-radius: 999px;
+      background: #f7fbff;
+      box-shadow: 0.9rem 0.25rem 0 -0.1rem #dae4ef;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem 1.5rem;
+      border-left: 1px solid var(--line);
+      padding-left: 1.5rem;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 0.45rem;
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.6rem 0 26rem;
+      border-top: 1px solid rgba(120, 154, 196, 0.14);
+      color: var(--muted);
+      background: #02070d;
+      font-size: 0.82rem;
+    }
+
+    @media (max-width: 1050px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        min-height: 100vh;
+        grid-template-rows: auto auto auto;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .nav,
+      .live {
+        justify-self: start;
+      }
+
+      .workspace {
         grid-template-columns: 1fr;
       }
 
       .sidebar {
         border-right: 0;
-        border-bottom: 1px solid var(--panel-border);
+        border-bottom: 1px solid var(--line);
       }
 
-      h1 {
-        margin-top: 2rem;
-        max-width: 13ch;
-        font-size: 3rem;
+      .map {
+        min-height: 44rem;
       }
 
-      .globe-stage {
-        min-height: 32rem;
-        padding: 1rem 1rem 4rem;
+      .detail {
+        grid-template-columns: 1fr;
+        position: relative;
+        margin: 1rem;
+        left: auto;
+        right: auto;
+        bottom: auto;
       }
 
-      canvas {
-        width: min(92vw, 32rem);
-        height: min(92vw, 32rem);
+      .metrics {
+        border-left: 0;
+        padding-left: 0;
       }
 
-      .globe-hint {
-        right: 1rem;
-        bottom: 1rem;
-        left: 1rem;
-        max-width: none;
+      footer {
+        padding: 1rem;
       }
     }
 
-    @media (max-width: 520px) {
+    @media (max-width: 560px) {
+      .topbar,
       .sidebar {
-        padding: 1.25rem;
+        padding: 1rem;
       }
 
-      .input-row,
-      .stats {
+      .search,
+      .data-card,
+      .metrics {
         grid-template-columns: 1fr;
       }
 
-      button {
-        width: 100%;
+      .search {
+        height: auto;
+      }
+
+      .search button {
+        height: 2.75rem;
+      }
+
+      .brand-title {
+        font-size: 1.55rem;
       }
     }
   </style>
 </head>
 <body>
-  <div class="page">
-    <aside class="sidebar">
-      <section>
-        <div class="brand">
-          <span class="brand-mark" aria-hidden="true">FL</span>
-          Route Globe
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">A</div>
+        <div>
+          <p class="brand-title">Sky<span>Above</span></p>
+          <p class="brand-subtitle">Live Flight Tracker</p>
+        </div>
+      </div>
+
+      <form class="search" id="postcodeForm">
+        <input id="postcode" name="postcode" autocomplete="postal-code" placeholder="Enter postcode, e.g. SW1A 1AA" required>
+        <button type="submit">Search</button>
+      </form>
+
+      <nav class="nav" aria-label="Utility navigation">
+        <span>Settings</span>
+        <span>About</span>
+      </nav>
+
+      <div class="live">
+        <strong>LIVE</strong>
+        <span id="clock">12:45:32 UTC</span>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar">
+        <section class="card location-card">
+          <p class="eyebrow">Your Location</p>
+          <h1 class="postcode" id="locationPostcode">SW1A 1AA</h1>
+          <p class="place" id="locationPlace">London, United Kingdom</p>
+          <div class="coords">
+            <span id="locationCoords">51.5010 N, 0.1410 W</span>
+            <span class="target" aria-hidden="true">+</span>
+          </div>
+          <div class="radius-row">
+            <span>Radius: <strong>100 miles</strong></span>
+            <div class="range" aria-hidden="true"></div>
+          </div>
+        </section>
+
+        <section class="card flight-list" aria-label="Aircraft overhead">
+          <div class="section-title">
+            <span>Aircraft Overhead</span>
+            <span class="badge" id="flightCount">0</span>
+          </div>
+          <div id="flightRows"></div>
+          <button class="view-all" type="button">View all aircraft</button>
+        </section>
+
+        <div></div>
+
+        <section class="card data-card">
+          <div>
+            <span>Data provided by</span>
+            <strong>Mock Flight Feed</strong>
+          </div>
+          <div>
+            <span><span class="status-dot"></span>API Status</span>
+            <strong>Demo Mode</strong>
+          </div>
+        </section>
+      </aside>
+
+      <section class="map" aria-label="Interactive flight map">
+        <canvas id="mapCanvas"></canvas>
+
+        <div class="compass" aria-hidden="true">A</div>
+
+        <div class="tool-stack" aria-label="Map view controls">
+          <button class="active" type="button"><strong>3D</strong></button>
+          <button type="button">2D</button>
+          <button type="button">List</button>
         </div>
 
-        <h1>Flights above you</h1>
-        <p class="intro">
-          Enter a postcode to see aircraft currently above the nearest 100-mile radius. This static version uses mock flight data, ready to be replaced by a live flight API later.
-        </p>
-
-        <form class="search-panel" id="postcodeForm">
-          <label for="postcode">Departure postcode</label>
-          <div class="input-row">
-            <input id="postcode" name="postcode" autocomplete="postal-code" placeholder="e.g. SW1A 1AA" required>
-            <button type="submit">Search</button>
-          </div>
-          <p class="message" id="message">Try SW1A 1AA, M1 1AE, B1 1BB, EH1 1YZ, or CF10 1EP.</p>
-        </form>
-
-        <div class="stats" aria-label="Route summary">
-          <div class="stat">
-            <strong id="flightCount">0</strong>
-            <span>flights found</span>
-          </div>
-          <div class="stat">
-            <strong>100</strong>
-            <span>mile radius</span>
-          </div>
-          <div class="stat">
-            <strong id="nearestFlight">--</strong>
-            <span>nearest flight</span>
-          </div>
+        <div class="zoom" aria-label="Zoom controls">
+          <button type="button">+</button>
+          <button type="button">-</button>
+          <button type="button">*</button>
         </div>
 
-        <ul class="route-list" id="flightList" aria-label="Flights within 100 miles">
-          <li>
-            <b>No postcode searched yet</b>
-            <span>Results will appear here.</span>
-          </li>
-        </ul>
+        <article class="detail card" id="flightDetail">
+          <div>
+            <h2><span id="detailCallsign">BAW142</span><span class="pill">IN FLIGHT</span></h2>
+            <p class="airline" id="detailAirline">British Airways</p>
+            <div class="route">
+              <span id="detailFrom">LHR</span>
+              <span class="route-line"></span>
+              <span id="detailTo">JFK</span>
+            </div>
+            <p class="airline" id="detailSchedule">London Heathrow to New York JFK</p>
+          </div>
+          <div class="aircraft-photo" aria-hidden="true"></div>
+          <div class="metrics">
+            <div class="metric">
+              <span>Altitude</span>
+              <strong id="detailAltitude">36,000 ft</strong>
+            </div>
+            <div class="metric">
+              <span>Speed</span>
+              <strong id="detailSpeed">466 kts</strong>
+            </div>
+            <div class="metric">
+              <span>Heading</span>
+              <strong id="detailHeading">287 deg</strong>
+            </div>
+            <div class="metric">
+              <span>Distance</span>
+              <strong id="detailDistance">2.1 km</strong>
+            </div>
+            <div class="metric">
+              <span>Vertical Speed</span>
+              <strong id="detailVertical">+64 ft/min</strong>
+            </div>
+            <div class="metric">
+              <span>Squawk</span>
+              <strong id="detailSquawk">1234</strong>
+            </div>
+          </div>
+        </article>
       </section>
-    </aside>
-
-    <main class="globe-stage">
-      <canvas id="globe" width="900" height="900" aria-label="Interactive globe showing sample flight routes"></canvas>
-      <p class="globe-hint">Drag the globe to rotate it. Search results highlight nearby aircraft and their route paths on the Earth.</p>
     </main>
+
+    <footer>
+      <span>SkyAbove Live Flight Tracker - All times UTC - Data for informational use only</span>
+      <span>2026 SkyAbove</span>
+    </footer>
   </div>
 
   <script>
-    const canvas = document.getElementById("globe");
+    const canvas = document.getElementById("mapCanvas");
     const ctx = canvas.getContext("2d");
     const form = document.getElementById("postcodeForm");
     const postcodeInput = document.getElementById("postcode");
-    const message = document.getElementById("message");
+    const clock = document.getElementById("clock");
+    const locationPostcode = document.getElementById("locationPostcode");
+    const locationPlace = document.getElementById("locationPlace");
+    const locationCoords = document.getElementById("locationCoords");
     const flightCount = document.getElementById("flightCount");
-    const nearestFlight = document.getElementById("nearestFlight");
-    const flightList = document.getElementById("flightList");
+    const flightRows = document.getElementById("flightRows");
+    const detailCallsign = document.getElementById("detailCallsign");
+    const detailAirline = document.getElementById("detailAirline");
+    const detailFrom = document.getElementById("detailFrom");
+    const detailTo = document.getElementById("detailTo");
+    const detailSchedule = document.getElementById("detailSchedule");
+    const detailAltitude = document.getElementById("detailAltitude");
+    const detailSpeed = document.getElementById("detailSpeed");
+    const detailHeading = document.getElementById("detailHeading");
+    const detailDistance = document.getElementById("detailDistance");
+    const detailVertical = document.getElementById("detailVertical");
+    const detailSquawk = document.getElementById("detailSquawk");
 
     const postcodeLocations = {
-      "SW1A1AA": { label: "Westminster, London", lat: 51.501, lon: -0.141 },
-      "M11AE": { label: "Manchester", lat: 53.479, lon: -2.245 },
-      "B11BB": { label: "Birmingham", lat: 52.479, lon: -1.902 },
-      "EH11YZ": { label: "Edinburgh", lat: 55.953, lon: -3.188 },
-      "CF101EP": { label: "Cardiff", lat: 51.481, lon: -3.179 }
+      "SW1A1AA": { postcode: "SW1A 1AA", label: "London, United Kingdom", lat: 51.501, lon: -0.141 },
+      "M11AE": { postcode: "M1 1AE", label: "Manchester, United Kingdom", lat: 53.479, lon: -2.245 },
+      "B11BB": { postcode: "B1 1BB", label: "Birmingham, United Kingdom", lat: 52.479, lon: -1.902 },
+      "EH11YZ": { postcode: "EH1 1YZ", label: "Edinburgh, United Kingdom", lat: 55.953, lon: -3.188 },
+      "CF101EP": { postcode: "CF10 1EP", label: "Cardiff, United Kingdom", lat: 51.481, lon: -3.179 }
     };
 
-    const mockFlights = [
-      {
-        callsign: "BAW142",
-        airline: "British Airways",
-        from: "London Heathrow",
-        to: "New York JFK",
-        aircraft: "Boeing 777",
-        altitude: 33000,
-        speed: 489,
-        lat: 51.86,
-        lon: -1.6,
-        origin: { lat: 51.47, lon: -0.454 },
-        destination: { lat: 40.6413, lon: -73.7781 }
-      },
-      {
-        callsign: "EZY41MX",
-        airline: "easyJet",
-        from: "Manchester",
-        to: "Barcelona",
-        aircraft: "Airbus A320",
-        altitude: 28000,
-        speed: 431,
-        lat: 53.08,
-        lon: -2.9,
-        origin: { lat: 53.35, lon: -2.274 },
-        destination: { lat: 41.2974, lon: 2.0833 }
-      },
-      {
-        callsign: "RYR8VN",
-        airline: "Ryanair",
-        from: "Birmingham",
-        to: "Dublin",
-        aircraft: "Boeing 737",
-        altitude: 24000,
-        speed: 414,
-        lat: 52.61,
-        lon: -2.2,
-        origin: { lat: 52.4539, lon: -1.748 },
-        destination: { lat: 53.4213, lon: -6.2701 }
-      },
-      {
-        callsign: "VIR302",
-        airline: "Virgin Atlantic",
-        from: "London Heathrow",
-        to: "Delhi",
-        aircraft: "Airbus A350",
-        altitude: 37000,
-        speed: 502,
-        lat: 51.26,
-        lon: 0.92,
-        origin: { lat: 51.47, lon: -0.454 },
-        destination: { lat: 28.5562, lon: 77.1 }
-      },
-      {
-        callsign: "KLM64P",
-        airline: "KLM",
-        from: "Edinburgh",
-        to: "Amsterdam",
-        aircraft: "Embraer 190",
-        altitude: 21000,
-        speed: 398,
-        lat: 55.72,
-        lon: -2.65,
-        origin: { lat: 55.95, lon: -3.372 },
-        destination: { lat: 52.31, lon: 4.7683 }
-      },
-      {
-        callsign: "TOM7KD",
-        airline: "TUI Airways",
-        from: "Cardiff",
-        to: "Palma",
-        aircraft: "Boeing 737",
-        altitude: 30000,
-        speed: 447,
-        lat: 51.12,
-        lon: -3.55,
-        origin: { lat: 51.3967, lon: -3.3433 },
-        destination: { lat: 39.5517, lon: 2.7388 }
-      },
-      {
-        callsign: "DLH9KA",
-        airline: "Lufthansa",
-        from: "Frankfurt",
-        to: "Chicago",
-        aircraft: "Boeing 747",
-        altitude: 35000,
-        speed: 515,
-        lat: 50.05,
-        lon: 5.18,
-        origin: { lat: 50.0379, lon: 8.5622 },
-        destination: { lat: 41.9742, lon: -87.9073 }
-      }
+    const flights = [
+      { callsign: "BAW142", airline: "British Airways", from: "LHR", to: "JFK", fromName: "London Heathrow", toName: "New York JFK", aircraft: "Boeing 777", altitude: 36000, speed: 466, heading: 287, vertical: "+64 ft/min", squawk: "1234", lat: 51.72, lon: -1.45, origin: { lat: 51.47, lon: -0.454 }, destination: { lat: 40.6413, lon: -73.7781 } },
+      { callsign: "EZY45KR", airline: "easyJet", from: "MAN", to: "BCN", fromName: "Manchester", toName: "Barcelona", aircraft: "Airbus A320", altitude: 28000, speed: 412, heading: 172, vertical: "-128 ft/min", squawk: "4561", lat: 53.12, lon: -2.72, origin: { lat: 53.35, lon: -2.274 }, destination: { lat: 41.2974, lon: 2.0833 } },
+      { callsign: "RYR6QZP", airline: "Ryanair", from: "BHX", to: "DUB", fromName: "Birmingham", toName: "Dublin", aircraft: "Boeing 737", altitude: 34000, speed: 439, heading: 295, vertical: "+0 ft/min", squawk: "7312", lat: 52.68, lon: -2.35, origin: { lat: 52.4539, lon: -1.748 }, destination: { lat: 53.4213, lon: -6.2701 } },
+      { callsign: "VIR27TY", airline: "Virgin Atlantic", from: "LHR", to: "DEL", fromName: "London Heathrow", toName: "Delhi", aircraft: "Airbus A350", altitude: 37000, speed: 478, heading: 96, vertical: "+256 ft/min", squawk: "2210", lat: 51.24, lon: 0.86, origin: { lat: 51.47, lon: -0.454 }, destination: { lat: 28.5562, lon: 77.1 } },
+      { callsign: "DLH4MZ", airline: "Lufthansa", from: "FRA", to: "ORD", fromName: "Frankfurt", toName: "Chicago O'Hare", aircraft: "Boeing 747", altitude: 39000, speed: 488, heading: 302, vertical: "+0 ft/min", squawk: "5742", lat: 50.12, lon: 4.6, origin: { lat: 50.0379, lon: 8.5622 }, destination: { lat: 41.9742, lon: -87.9073 } },
+      { callsign: "SAS87AB", airline: "SAS", from: "EDI", to: "CPH", fromName: "Edinburgh", toName: "Copenhagen", aircraft: "Airbus A320neo", altitude: 31000, speed: 421, heading: 81, vertical: "-64 ft/min", squawk: "3460", lat: 55.74, lon: -2.45, origin: { lat: 55.95, lon: -3.372 }, destination: { lat: 55.6181, lon: 12.6561 } },
+      { callsign: "AFR1567", airline: "Air France", from: "CDG", to: "DUB", fromName: "Paris Charles de Gaulle", toName: "Dublin", aircraft: "Airbus A321", altitude: 38000, speed: 467, heading: 309, vertical: "+128 ft/min", squawk: "6621", lat: 50.7, lon: -1.28, origin: { lat: 49.0097, lon: 2.5479 }, destination: { lat: 53.4213, lon: -6.2701 } },
+      { callsign: "TOM7KD", airline: "TUI Airways", from: "CWL", to: "PMI", fromName: "Cardiff", toName: "Palma", aircraft: "Boeing 737", altitude: 30000, speed: 447, heading: 149, vertical: "+320 ft/min", squawk: "2105", lat: 51.13, lon: -3.55, origin: { lat: 51.3967, lon: -3.3433 }, destination: { lat: 39.5517, lon: 2.7388 } }
     ];
 
-    let searchLocation = null;
-    let visibleFlights = mockFlights.slice(0, 4);
-
-    const landmasses = [
-      [
-        { lat: 72, lon: -168 }, { lat: 69, lon: -140 }, { lat: 60, lon: -124 },
-        { lat: 50, lon: -126 }, { lat: 36, lon: -122 }, { lat: 26, lon: -112 },
-        { lat: 18, lon: -96 }, { lat: 8, lon: -82 }, { lat: 18, lon: -66 },
-        { lat: 30, lon: -78 }, { lat: 44, lon: -70 }, { lat: 58, lon: -60 },
-        { lat: 68, lon: -84 }, { lat: 74, lon: -118 }
-      ],
-      [
-        { lat: 13, lon: -81 }, { lat: 8, lon: -72 }, { lat: 2, lon: -62 },
-        { lat: -8, lon: -54 }, { lat: -18, lon: -44 }, { lat: -34, lon: -50 },
-        { lat: -54, lon: -70 }, { lat: -44, lon: -76 }, { lat: -26, lon: -72 },
-        { lat: -10, lon: -78 }, { lat: 4, lon: -78 }
-      ],
-      [
-        { lat: 72, lon: -10 }, { lat: 65, lon: 20 }, { lat: 55, lon: 42 },
-        { lat: 45, lon: 30 }, { lat: 36, lon: 12 }, { lat: 43, lon: -5 },
-        { lat: 52, lon: -10 }, { lat: 60, lon: -24 }
-      ],
-      [
-        { lat: 35, lon: -17 }, { lat: 31, lon: 10 }, { lat: 22, lon: 34 },
-        { lat: 8, lon: 45 }, { lat: -12, lon: 40 }, { lat: -35, lon: 22 },
-        { lat: -34, lon: 16 }, { lat: -18, lon: 12 }, { lat: -5, lon: 10 },
-        { lat: 8, lon: -8 }, { lat: 22, lon: -16 }
-      ],
-      [
-        { lat: 72, lon: 34 }, { lat: 68, lon: 80 }, { lat: 58, lon: 126 },
-        { lat: 48, lon: 154 }, { lat: 32, lon: 138 }, { lat: 22, lon: 116 },
-        { lat: 8, lon: 104 }, { lat: 6, lon: 78 }, { lat: 22, lon: 68 },
-        { lat: 30, lon: 48 }, { lat: 45, lon: 40 }, { lat: 58, lon: 30 }
-      ],
-      [
-        { lat: 8, lon: 95 }, { lat: 5, lon: 112 }, { lat: -5, lon: 122 },
-        { lat: -10, lon: 115 }, { lat: -4, lon: 102 }
-      ],
-      [
-        { lat: -12, lon: 114 }, { lat: -18, lon: 134 }, { lat: -28, lon: 153 },
-        { lat: -42, lon: 146 }, { lat: -36, lon: 118 }, { lat: -24, lon: 112 }
-      ],
-      [
-        { lat: 82, lon: -62 }, { lat: 78, lon: -28 }, { lat: 68, lon: -20 },
-        { lat: 61, lon: -42 }, { lat: 66, lon: -58 }
-      ]
+    const land = [
+      [[50.1, -5.7], [51.7, -5.1], [53.6, -4.2], [55.7, -5.6], [58.4, -4.4], [58.7, -2.3], [57.6, -1.5], [55.0, -1.4], [53.2, 0.3], [51.4, 1.1], [50.1, -0.6]],
+      [[51.4, -10.4], [53.4, -9.8], [55.2, -8.1], [55.3, -6.1], [53.7, -5.7], [51.4, -6.7]],
+      [[36.0, -9.5], [43.8, -9.0], [48.8, -4.5], [51.2, 2.2], [53.8, 6.8], [56.3, 10.2], [58.8, 18.2], [60.1, 30.1], [54.3, 37.8], [47.2, 29.5], [45.3, 14.6], [41.8, 12.5], [40.4, 0.1], [36.0, -5.8]],
+      [[35.8, -5.8], [36.6, 10.2], [32.0, 25.2], [26.0, 31.5], [21.0, 17.0], [26.2, 2.0], [31.6, -8.8]]
     ];
 
-    let rotation = { x: -0.25, y: -0.45 };
-    let velocity = { x: 0.0008, y: 0.0018 };
-    let pointer = null;
-
-    function toRadians(degrees) {
-      return degrees * Math.PI / 180;
-    }
-
-    function rotatePoint(point) {
-      const cosY = Math.cos(rotation.y);
-      const sinY = Math.sin(rotation.y);
-      const cosX = Math.cos(rotation.x);
-      const sinX = Math.sin(rotation.x);
-
-      const x1 = point.x * cosY - point.z * sinY;
-      const z1 = point.x * sinY + point.z * cosY;
-      const y1 = point.y * cosX - z1 * sinX;
-      const z2 = point.y * sinX + z1 * cosX;
-
-      return { x: x1, y: y1, z: z2 };
-    }
-
-    function geoToPoint(lat, lon) {
-      const phi = toRadians(lat);
-      const theta = toRadians(lon);
-
-      return {
-        x: Math.cos(phi) * Math.sin(theta),
-        y: -Math.sin(phi),
-        z: Math.cos(phi) * Math.cos(theta)
-      };
-    }
-
-    function project(lat, lon, radius, center) {
-      const point = rotatePoint(geoToPoint(lat, lon));
-      return {
-        x: center.x + point.x * radius,
-        y: center.y + point.y * radius,
-        z: point.z
-      };
-    }
-
-    function drawSphere(radius, center) {
-      const glow = ctx.createRadialGradient(center.x - radius * 0.3, center.y - radius * 0.35, radius * 0.1, center.x, center.y, radius);
-      glow.addColorStop(0, "#2f7f77");
-      glow.addColorStop(0.45, "#164840");
-      glow.addColorStop(1, "#071615");
-
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = glow;
-      ctx.shadowColor = "rgba(79, 209, 165, 0.35)";
-      ctx.shadowBlur = 34;
-      ctx.fill();
-      ctx.restore();
-
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
-      ctx.clip();
-
-      drawLandmasses(radius, center);
-      drawGraticule(radius, center);
-      drawRoutes(radius, center);
-      drawCities(radius, center);
-
-      ctx.restore();
-
-      ctx.beginPath();
-      ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(143, 240, 207, 0.45)";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-
-    function drawLandmasses(radius, center) {
-      landmasses.forEach((land) => {
-        const visiblePoints = land.map((point) => project(point.lat, point.lon, radius, center));
-
-        if (!visiblePoints.some((point) => point.z > -0.2)) {
-          return;
-        }
-
-        ctx.beginPath();
-        visiblePoints.forEach((point, index) => {
-          if (index === 0) {
-            ctx.moveTo(point.x, point.y);
-          } else {
-            ctx.lineTo(point.x, point.y);
-          }
-        });
-        ctx.closePath();
-
-        const averageDepth = visiblePoints.reduce((sum, point) => sum + point.z, 0) / visiblePoints.length;
-        const alpha = Math.max(0.28, Math.min(0.92, 0.52 + averageDepth * 0.34));
-
-        ctx.fillStyle = `rgba(65, 126, 85, ${alpha})`;
-        ctx.strokeStyle = `rgba(174, 222, 174, ${alpha * 0.42})`;
-        ctx.lineWidth = Math.max(1, radius * 0.004);
-        ctx.fill();
-        ctx.stroke();
-      });
-
-      drawPolarCap(radius, center, -74, "rgba(232, 245, 238, 0.5)");
-    }
-
-    function drawPolarCap(radius, center, lat, color) {
-      const points = Array.from({ length: 121 }, (_, i) => ({
-        lat,
-        lon: -180 + i * 3
-      }));
-
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      points.forEach((point, index) => {
-        const projected = project(point.lat, point.lon, radius, center);
-
-        if (index === 0) {
-          ctx.moveTo(projected.x, projected.y);
-        } else {
-          ctx.lineTo(projected.x, projected.y);
-        }
-      });
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    function drawGraticule(radius, center) {
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = "rgba(218, 241, 235, 0.1)";
-
-      for (let lat = -60; lat <= 60; lat += 30) {
-        drawGeoLine(radius, center, Array.from({ length: 145 }, (_, i) => ({
-          lat,
-          lon: -180 + i * 2.5
-        })));
-      }
-
-      for (let lon = -180; lon < 180; lon += 30) {
-        drawGeoLine(radius, center, Array.from({ length: 73 }, (_, i) => ({
-          lat: -90 + i * 2.5,
-          lon
-        })));
-      }
-    }
-
-    function drawGeoLine(radius, center, points) {
-      let drawing = false;
-      ctx.beginPath();
-
-      points.forEach((point) => {
-        const projected = project(point.lat, point.lon, radius, center);
-
-        if (projected.z < -0.08) {
-          drawing = false;
-          return;
-        }
-
-        if (!drawing) {
-          ctx.moveTo(projected.x, projected.y);
-          drawing = true;
-        } else {
-          ctx.lineTo(projected.x, projected.y);
-        }
-      });
-
-      ctx.stroke();
-    }
-
-    function drawRoutes(radius, center) {
-      visibleFlights.forEach((flight) => {
-        const points = interpolateRoute(flight.origin, flight.destination);
-
-        ctx.strokeStyle = "rgba(246, 200, 95, 0.78)";
-        ctx.lineWidth = 2.5;
-        drawGeoLine(radius, center, points);
-      });
-
-      if (searchLocation) {
-        drawRadiusMarker(radius, center, searchLocation);
-      }
-    }
-
-    function interpolateRoute(from, to) {
-      const points = [];
-      const steps = 80;
-
-      for (let i = 0; i <= steps; i += 1) {
-        const t = i / steps;
-        points.push({
-          lat: from.lat + (to.lat - from.lat) * t + Math.sin(Math.PI * t) * 10,
-          lon: from.lon + (to.lon - from.lon) * t
-        });
-      }
-
-      return points;
-    }
-
-    function drawCities(radius, center) {
-      visibleFlights.forEach((flight) => {
-        const point = project(flight.lat, flight.lon, radius, center);
-
-        if (point.z < 0) {
-          return;
-        }
-
-        const scale = 0.7 + point.z * 0.5;
-
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, 5 * scale, 0, Math.PI * 2);
-        ctx.fillStyle = "#f6c85f";
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, 10 * scale, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(246, 200, 95, 0.35)";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      });
-    }
-
-    function drawRadiusMarker(radius, center, location) {
-      const point = project(location.lat, location.lon, radius, center);
-
-      if (point.z < 0) {
-        return;
-      }
-
-      const scale = 0.8 + point.z * 0.4;
-
-      ctx.beginPath();
-      ctx.arc(point.x, point.y, 7 * scale, 0, Math.PI * 2);
-      ctx.fillStyle = "#8ff0cf";
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.arc(point.x, point.y, 22 * scale, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(143, 240, 207, 0.42)";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
+    let location = postcodeLocations.SW1A1AA;
+    let visibleFlights = [];
+    let selectedFlight = null;
+    let drag = null;
+    let offset = { x: 0, y: 0 };
 
     function normalisePostcode(value) {
       return value.replace(/\s+/g, "").toUpperCase();
     }
 
-    function milesBetween(a, b) {
-      const earthRadiusMiles = 3958.8;
+    function toRadians(value) {
+      return value * Math.PI / 180;
+    }
+
+    function distanceMiles(a, b) {
+      const radius = 3958.8;
       const dLat = toRadians(b.lat - a.lat);
       const dLon = toRadians(b.lon - a.lon);
       const lat1 = toRadians(a.lat);
       const lat2 = toRadians(b.lat);
-      const haversine = Math.sin(dLat / 2) ** 2 +
-        Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
-
-      return 2 * earthRadiusMiles * Math.asin(Math.sqrt(haversine));
+      const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+      return 2 * radius * Math.asin(Math.sqrt(h));
     }
 
-    function findFlightsNear(location) {
-      return mockFlights
-        .map((flight) => ({
-          ...flight,
-          distance: Math.round(milesBetween(location, flight))
-        }))
+    function getNearbyFlights() {
+      return flights
+        .map((flight) => ({ ...flight, distance: distanceMiles(location, flight) }))
         .filter((flight) => flight.distance <= 100)
         .sort((a, b) => a.distance - b.distance);
     }
 
-    function renderFlights(flights, location) {
-      flightCount.textContent = String(flights.length);
-      nearestFlight.textContent = flights.length ? `${flights[0].distance}mi` : "--";
+    function formatCoord(value, positive, negative) {
+      return `${Math.abs(value).toFixed(4)} ${value >= 0 ? positive : negative}`;
+    }
 
-      if (!flights.length) {
-        flightList.innerHTML = `
-          <li>
-            <b>No flights found</b>
-            <span>No mock aircraft are currently within 100 miles of ${location.label}.</span>
-          </li>
-        `;
-        return;
+    function project(point) {
+      const rect = canvas.getBoundingClientRect();
+      const scale = Math.min(rect.width / 42, rect.height / 24);
+      const centerLat = location.lat - 4;
+      const centerLon = location.lon + 8;
+      return {
+        x: rect.width / 2 + (point.lon - centerLon) * scale * 1.45 + offset.x,
+        y: rect.height / 2 - (point.lat - centerLat) * scale * 1.9 + offset.y
+      };
+    }
+
+    function drawStars(width, height) {
+      ctx.fillStyle = "#02070d";
+      ctx.fillRect(0, 0, width, height);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
+      for (let i = 0; i < 220; i += 1) {
+        const x = (i * 97) % width;
+        const y = (i * 53) % Math.max(1, height * 0.55);
+        const size = i % 11 === 0 ? 1.6 : 0.8;
+        ctx.globalAlpha = i % 5 === 0 ? 0.85 : 0.38;
+        ctx.fillRect(x, y, size, size);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawEarth(width, height) {
+      const cx = width * 0.61 + offset.x * 0.15;
+      const cy = height * 0.97 + offset.y * 0.08;
+      const rx = width * 0.72;
+      const ry = height * 0.82;
+      const earth = ctx.createRadialGradient(cx - rx * 0.2, cy - ry * 0.58, 40, cx, cy, rx);
+      earth.addColorStop(0, "#245ba0");
+      earth.addColorStop(0.42, "#113363");
+      earth.addColorStop(0.74, "#07182f");
+      earth.addColorStop(1, "#020711");
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx, ry, 0, Math.PI, Math.PI * 2);
+      ctx.fillStyle = earth;
+      ctx.shadowColor = "rgba(45, 147, 255, 0.9)";
+      ctx.shadowBlur = 26;
+      ctx.fill();
+      ctx.clip();
+
+      land.forEach((shape) => {
+        ctx.beginPath();
+        shape.forEach(([lat, lon], index) => {
+          const p = project({ lat, lon });
+          if (index === 0) {
+            ctx.moveTo(p.x, p.y);
+          } else {
+            ctx.lineTo(p.x, p.y);
+          }
+        });
+        ctx.closePath();
+        ctx.fillStyle = "rgba(88, 93, 68, 0.86)";
+        ctx.strokeStyle = "rgba(234, 218, 160, 0.35)";
+        ctx.lineWidth = 1;
+        ctx.fill();
+        ctx.stroke();
+      });
+
+      for (let i = 0; i < 80; i += 1) {
+        const p = project({ lat: 35 + ((i * 13) % 24), lon: -8 + ((i * 17) % 45) });
+        ctx.fillStyle = "rgba(255, 204, 90, 0.38)";
+        ctx.fillRect(p.x, p.y, 1.7, 1.7);
       }
 
-      flightList.innerHTML = flights.map((flight) => `
-        <li>
-          <b>${flight.callsign} - ${flight.airline}</b>
-          <span>${flight.from} to ${flight.to}</span>
-          <div class="flight-meta">
-            <span>${flight.distance} mi away</span>
-            <span>${flight.altitude.toLocaleString()} ft</span>
-            <span>${flight.speed} mph</span>
-            <span>${flight.aircraft}</span>
-          </div>
-        </li>
-      `).join("");
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx, ry, 0, Math.PI, Math.PI * 2);
+      ctx.strokeStyle = "rgba(86, 174, 255, 0.85)";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
+    function drawRoute(flight, isSelected) {
+      const start = project(flight.origin);
+      const end = project(flight.destination);
+      const control = {
+        x: (start.x + end.x) / 2,
+        y: Math.min(start.y, end.y) - 90
+      };
+
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.quadraticCurveTo(control.x, control.y, end.x, end.y);
+      ctx.strokeStyle = isSelected ? "rgba(255, 255, 255, 0.72)" : "rgba(200, 220, 245, 0.26)";
+      ctx.lineWidth = isSelected ? 2.2 : 1.4;
+      ctx.stroke();
+    }
+
+    function drawPlane(flight, isSelected) {
+      const p = project(flight);
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(toRadians(flight.heading));
+      ctx.fillStyle = isSelected ? "#ffd767" : "#ffc640";
+      ctx.shadowColor = "rgba(255, 198, 64, 0.7)";
+      ctx.shadowBlur = isSelected ? 18 : 8;
+      ctx.beginPath();
+      ctx.moveTo(0, -12);
+      ctx.lineTo(4, 5);
+      ctx.lineTo(15, 12);
+      ctx.lineTo(3, 12);
+      ctx.lineTo(0, 19);
+      ctx.lineTo(-3, 12);
+      ctx.lineTo(-15, 12);
+      ctx.lineTo(-4, 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawLocation() {
+      const p = project(location);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 84, 0, Math.PI * 2);
+      ctx.setLineDash([8, 6]);
+      ctx.strokeStyle = "rgba(210, 225, 245, 0.72)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#2d93ff";
+      ctx.strokeStyle = "#cde7ff";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y + 34);
+      ctx.bezierCurveTo(p.x - 28, p.y - 4, p.x - 18, p.y - 34, p.x, p.y - 34);
+      ctx.bezierCurveTo(p.x + 18, p.y - 34, p.x + 28, p.y - 4, p.x, p.y + 34);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(p.x, p.y - 11, 8, 0, Math.PI * 2);
+      ctx.fillStyle = "#d9efff";
+      ctx.fill();
+      ctx.restore();
     }
 
     function draw() {
       const rect = canvas.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
-
-      if (canvas.width !== Math.round(rect.width * dpr)) {
+      if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
         canvas.width = Math.round(rect.width * dpr);
         canvas.height = Math.round(rect.height * dpr);
       }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      const center = { x: canvas.width / 2, y: canvas.height / 2 };
-      const radius = Math.min(canvas.width, canvas.height) * 0.43;
-
-      if (!pointer) {
-        rotation.x += velocity.x;
-        rotation.y += velocity.y;
-      }
-
-      drawSphere(radius, center);
+      drawStars(rect.width, rect.height);
+      drawEarth(rect.width, rect.height);
+      visibleFlights.forEach((flight) => drawRoute(flight, flight.callsign === selectedFlight.callsign));
+      drawLocation();
+      visibleFlights.forEach((flight) => drawPlane(flight, flight.callsign === selectedFlight.callsign));
       requestAnimationFrame(draw);
     }
 
-    canvas.addEventListener("pointerdown", (event) => {
-      canvas.setPointerCapture(event.pointerId);
-      pointer = {
-        id: event.pointerId,
-        x: event.clientX,
-        y: event.clientY
-      };
-    });
+    function setDetail(flight) {
+      selectedFlight = flight;
+      detailCallsign.textContent = flight.callsign;
+      detailAirline.textContent = flight.airline;
+      detailFrom.textContent = flight.from;
+      detailTo.textContent = flight.to;
+      detailSchedule.textContent = `${flight.fromName} to ${flight.toName}`;
+      detailAltitude.textContent = `${flight.altitude.toLocaleString()} ft`;
+      detailSpeed.textContent = `${flight.speed} kts`;
+      detailHeading.textContent = `${flight.heading} deg`;
+      detailDistance.textContent = `${flight.distance.toFixed(1)} mi`;
+      detailVertical.textContent = flight.vertical;
+      detailSquawk.textContent = flight.squawk;
+      renderFlights();
+    }
 
-    canvas.addEventListener("pointermove", (event) => {
-      if (!pointer || pointer.id !== event.pointerId) {
+    function renderFlights() {
+      flightCount.textContent = visibleFlights.length;
+      if (!visibleFlights.length) {
+        flightRows.innerHTML = `<div class="flight-row"><div></div><div><p class="flight-id">No aircraft found</p><p class="airline">No mock flights are inside 100 miles.</p></div></div>`;
         return;
       }
 
-      const dx = event.clientX - pointer.x;
-      const dy = event.clientY - pointer.y;
-      rotation.y += dx * 0.008;
-      rotation.x += dy * 0.008;
-      rotation.x = Math.max(-1.35, Math.min(1.35, rotation.x));
-      pointer.x = event.clientX;
-      pointer.y = event.clientY;
-    });
+      flightRows.innerHTML = visibleFlights.map((flight) => `
+        <div class="flight-row ${selectedFlight && selectedFlight.callsign === flight.callsign ? "active" : ""}" data-callsign="${flight.callsign}">
+          <div class="plane" aria-hidden="true">></div>
+          <div>
+            <p class="flight-id">${flight.callsign}</p>
+            <p class="airline">${flight.airline}</p>
+          </div>
+          <div class="flight-values">
+            <strong>${flight.altitude.toLocaleString()} ft</strong>
+            <span>${flight.speed} kts - ${flight.distance.toFixed(1)} mi</span>
+          </div>
+        </div>
+      `).join("");
+    }
 
-    canvas.addEventListener("pointerup", () => {
-      pointer = null;
-    });
+    function updateLocation(nextLocation) {
+      location = nextLocation;
+      visibleFlights = getNearbyFlights();
+      selectedFlight = visibleFlights[0] || flights[0];
+      locationPostcode.textContent = location.postcode;
+      locationPlace.textContent = location.label;
+      locationCoords.textContent = `${formatCoord(location.lat, "N", "S")}, ${formatCoord(location.lon, "E", "W")}`;
+      setDetail(selectedFlight);
+    }
 
     form.addEventListener("submit", (event) => {
       event.preventDefault();
+      const key = normalisePostcode(postcodeInput.value);
+      const nextLocation = postcodeLocations[key];
 
-      const postcode = normalisePostcode(postcodeInput.value);
-
-      if (!postcode) {
-        message.textContent = "Enter a postcode before searching.";
-        message.style.color = "var(--danger)";
+      if (!nextLocation) {
+        postcodeInput.setCustomValidity("Try SW1A 1AA, M1 1AE, B1 1BB, EH1 1YZ, or CF10 1EP.");
+        postcodeInput.reportValidity();
         return;
       }
 
-      const location = postcodeLocations[postcode];
-
-      if (!location) {
-        message.textContent = "That postcode is not in the static demo dataset yet. Try SW1A 1AA, M1 1AE, B1 1BB, EH1 1YZ, or CF10 1EP.";
-        message.style.color = "var(--danger)";
-        return;
-      }
-
-      searchLocation = location;
-      visibleFlights = findFlightsNear(location);
-      renderFlights(visibleFlights, location);
-
-      message.textContent = `Showing mock aircraft within 100 miles of ${location.label}. This will later call the live flight data API.`;
-      message.style.color = "var(--accent-strong)";
+      postcodeInput.setCustomValidity("");
+      updateLocation(nextLocation);
     });
 
+    flightRows.addEventListener("click", (event) => {
+      const row = event.target.closest(".flight-row");
+      if (!row || !row.dataset.callsign) {
+        return;
+      }
+      const flight = visibleFlights.find((item) => item.callsign === row.dataset.callsign);
+      if (flight) {
+        setDetail(flight);
+      }
+    });
+
+    canvas.addEventListener("pointerdown", (event) => {
+      canvas.setPointerCapture(event.pointerId);
+      drag = { x: event.clientX, y: event.clientY };
+    });
+
+    canvas.addEventListener("pointermove", (event) => {
+      if (!drag) {
+        return;
+      }
+      offset.x += event.clientX - drag.x;
+      offset.y += event.clientY - drag.y;
+      drag = { x: event.clientX, y: event.clientY };
+    });
+
+    canvas.addEventListener("pointerup", () => {
+      drag = null;
+    });
+
+    function updateClock() {
+      clock.textContent = `${new Date().toISOString().slice(11, 19)} UTC`;
+    }
+
+    updateLocation(location);
+    updateClock();
+    setInterval(updateClock, 1000);
     draw();
   </script>
 </body>
