@@ -3,12 +3,592 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Static Web Page</title>
+  <title>Flight Route Globe</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #09110f;
+      --panel: #101916;
+      --panel-border: #20342e;
+      --text: #f2f7f4;
+      --muted: #9db4aa;
+      --accent: #4fd1a5;
+      --accent-strong: #8ff0cf;
+      --route: #f6c85f;
+      --danger: #ff7a7a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 70% 20%, rgba(79, 209, 165, 0.14), transparent 34rem),
+        linear-gradient(145deg, #070c0b 0%, var(--bg) 54%, #11140b 100%);
+      color: var(--text);
+    }
+
+    .page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(20rem, 27rem) minmax(0, 1fr);
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 2rem;
+      padding: 2rem;
+      background: rgba(16, 25, 22, 0.84);
+      border-right: 1px solid var(--panel-border);
+      backdrop-filter: blur(18px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--accent-strong);
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .brand-mark {
+      width: 2.25rem;
+      height: 2.25rem;
+      border: 1px solid rgba(143, 240, 207, 0.5);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(79, 209, 165, 0.12);
+    }
+
+    h1 {
+      margin: 3rem 0 1rem;
+      max-width: 11ch;
+      font-size: clamp(2.75rem, 7vw, 5rem);
+      line-height: 0.92;
+      letter-spacing: 0;
+    }
+
+    .intro {
+      margin: 0;
+      max-width: 34rem;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.65;
+    }
+
+    .search-panel {
+      margin-top: 2rem;
+      padding: 1rem;
+      border: 1px solid var(--panel-border);
+      border-radius: 0.5rem;
+      background: rgba(9, 17, 15, 0.72);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: var(--accent-strong);
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.6rem;
+    }
+
+    input {
+      width: 100%;
+      min-width: 0;
+      height: 2.75rem;
+      border: 1px solid #2b443c;
+      border-radius: 0.4rem;
+      padding: 0 0.85rem;
+      background: #07100d;
+      color: var(--text);
+      font: inherit;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(79, 209, 165, 0.18);
+    }
+
+    button {
+      height: 2.75rem;
+      border: 0;
+      border-radius: 0.4rem;
+      padding: 0 1rem;
+      background: var(--accent);
+      color: #062019;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: var(--accent-strong);
+    }
+
+    .message {
+      min-height: 1.35rem;
+      margin: 0.75rem 0 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-top: 2rem;
+    }
+
+    .stat {
+      padding: 0.85rem;
+      border: 1px solid var(--panel-border);
+      border-radius: 0.5rem;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.35rem;
+      color: var(--text);
+    }
+
+    .stat span {
+      display: block;
+      margin-top: 0.25rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .route-list {
+      margin: 2rem 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .route-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .route-list b {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .globe-stage {
+      position: relative;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      padding: 2rem;
+    }
+
+    canvas {
+      width: min(70vw, 52rem);
+      height: min(70vw, 52rem);
+      max-width: calc(100vw - 4rem);
+      max-height: calc(100vh - 4rem);
+      aspect-ratio: 1;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    canvas:active {
+      cursor: grabbing;
+    }
+
+    .globe-hint {
+      position: absolute;
+      right: 2rem;
+      bottom: 2rem;
+      max-width: 18rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 860px) {
+      .page {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        border-right: 0;
+        border-bottom: 1px solid var(--panel-border);
+      }
+
+      h1 {
+        margin-top: 2rem;
+        max-width: 13ch;
+        font-size: 3rem;
+      }
+
+      .globe-stage {
+        min-height: 32rem;
+        padding: 1rem 1rem 4rem;
+      }
+
+      canvas {
+        width: min(92vw, 32rem);
+        height: min(92vw, 32rem);
+      }
+
+      .globe-hint {
+        right: 1rem;
+        bottom: 1rem;
+        left: 1rem;
+        max-width: none;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .sidebar {
+        padding: 1.25rem;
+      }
+
+      .input-row,
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 <body>
-  <main>
-    <h1>Hello from GitHub Pages</h1>
-    <p>This is a simple static web page hosted from a GitHub repository.</p>
-  </main>
+  <div class="page">
+    <aside class="sidebar">
+      <section>
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">FL</span>
+          Route Globe
+        </div>
+
+        <h1>Explore flight routes</h1>
+        <p class="intro">
+          Search by postcode to find nearby airports and future route options. The postcode lookup is ready for an API connection when the backend is available.
+        </p>
+
+        <form class="search-panel" id="postcodeForm">
+          <label for="postcode">Departure postcode</label>
+          <div class="input-row">
+            <input id="postcode" name="postcode" autocomplete="postal-code" placeholder="e.g. SW1A 1AA" required>
+            <button type="submit">Search</button>
+          </div>
+          <p class="message" id="message">Enter a postcode to prepare a future API route search.</p>
+        </form>
+
+        <div class="stats" aria-label="Route summary">
+          <div class="stat">
+            <strong>6</strong>
+            <span>sample routes</span>
+          </div>
+          <div class="stat">
+            <strong>4</strong>
+            <span>continents</span>
+          </div>
+          <div class="stat">
+            <strong>360</strong>
+            <span>drag control</span>
+          </div>
+        </div>
+
+        <ul class="route-list" aria-label="Featured flight routes">
+          <li><b>London</b><span>New York</span></li>
+          <li><b>London</b><span>Dubai</span></li>
+          <li><b>Paris</b><span>Tokyo</span></li>
+          <li><b>Singapore</b><span>Sydney</span></li>
+        </ul>
+      </section>
+    </aside>
+
+    <main class="globe-stage">
+      <canvas id="globe" width="900" height="900" aria-label="Interactive globe showing sample flight routes"></canvas>
+      <p class="globe-hint">Drag the globe to rotate it. Routes are sample data for the static front end and can later be replaced by API results.</p>
+    </main>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("globe");
+    const ctx = canvas.getContext("2d");
+    const form = document.getElementById("postcodeForm");
+    const postcodeInput = document.getElementById("postcode");
+    const message = document.getElementById("message");
+
+    const cities = {
+      London: { lat: 51.5074, lon: -0.1278 },
+      NewYork: { lat: 40.7128, lon: -74.006 },
+      Dubai: { lat: 25.2048, lon: 55.2708 },
+      Paris: { lat: 48.8566, lon: 2.3522 },
+      Tokyo: { lat: 35.6762, lon: 139.6503 },
+      Singapore: { lat: 1.3521, lon: 103.8198 },
+      Sydney: { lat: -33.8688, lon: 151.2093 },
+      CapeTown: { lat: -33.9249, lon: 18.4241 },
+      Rio: { lat: -22.9068, lon: -43.1729 }
+    };
+
+    const routes = [
+      ["London", "NewYork"],
+      ["London", "Dubai"],
+      ["Paris", "Tokyo"],
+      ["Singapore", "Sydney"],
+      ["Dubai", "CapeTown"],
+      ["Rio", "London"]
+    ];
+
+    let rotation = { x: -0.25, y: -0.45 };
+    let velocity = { x: 0.0008, y: 0.0018 };
+    let pointer = null;
+
+    function toRadians(degrees) {
+      return degrees * Math.PI / 180;
+    }
+
+    function rotatePoint(point) {
+      const cosY = Math.cos(rotation.y);
+      const sinY = Math.sin(rotation.y);
+      const cosX = Math.cos(rotation.x);
+      const sinX = Math.sin(rotation.x);
+
+      const x1 = point.x * cosY - point.z * sinY;
+      const z1 = point.x * sinY + point.z * cosY;
+      const y1 = point.y * cosX - z1 * sinX;
+      const z2 = point.y * sinX + z1 * cosX;
+
+      return { x: x1, y: y1, z: z2 };
+    }
+
+    function geoToPoint(lat, lon) {
+      const phi = toRadians(lat);
+      const theta = toRadians(lon);
+
+      return {
+        x: Math.cos(phi) * Math.sin(theta),
+        y: -Math.sin(phi),
+        z: Math.cos(phi) * Math.cos(theta)
+      };
+    }
+
+    function project(lat, lon, radius, center) {
+      const point = rotatePoint(geoToPoint(lat, lon));
+      return {
+        x: center.x + point.x * radius,
+        y: center.y + point.y * radius,
+        z: point.z
+      };
+    }
+
+    function drawSphere(radius, center) {
+      const glow = ctx.createRadialGradient(center.x - radius * 0.3, center.y - radius * 0.35, radius * 0.1, center.x, center.y, radius);
+      glow.addColorStop(0, "#2f7f77");
+      glow.addColorStop(0.45, "#164840");
+      glow.addColorStop(1, "#071615");
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = glow;
+      ctx.shadowColor = "rgba(79, 209, 165, 0.35)";
+      ctx.shadowBlur = 34;
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
+      ctx.clip();
+
+      drawGraticule(radius, center);
+      drawRoutes(radius, center);
+      drawCities(radius, center);
+
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(143, 240, 207, 0.45)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    function drawGraticule(radius, center) {
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(180, 230, 214, 0.12)";
+
+      for (let lat = -60; lat <= 60; lat += 30) {
+        drawGeoLine(radius, center, Array.from({ length: 145 }, (_, i) => ({
+          lat,
+          lon: -180 + i * 2.5
+        })));
+      }
+
+      for (let lon = -180; lon < 180; lon += 30) {
+        drawGeoLine(radius, center, Array.from({ length: 73 }, (_, i) => ({
+          lat: -90 + i * 2.5,
+          lon
+        })));
+      }
+    }
+
+    function drawGeoLine(radius, center, points) {
+      let drawing = false;
+      ctx.beginPath();
+
+      points.forEach((point) => {
+        const projected = project(point.lat, point.lon, radius, center);
+
+        if (projected.z < -0.08) {
+          drawing = false;
+          return;
+        }
+
+        if (!drawing) {
+          ctx.moveTo(projected.x, projected.y);
+          drawing = true;
+        } else {
+          ctx.lineTo(projected.x, projected.y);
+        }
+      });
+
+      ctx.stroke();
+    }
+
+    function drawRoutes(radius, center) {
+      routes.forEach(([start, end]) => {
+        const from = cities[start];
+        const to = cities[end];
+        const points = interpolateRoute(from, to);
+
+        ctx.strokeStyle = "rgba(246, 200, 95, 0.78)";
+        ctx.lineWidth = 2.5;
+        drawGeoLine(radius, center, points);
+      });
+    }
+
+    function interpolateRoute(from, to) {
+      const points = [];
+      const steps = 80;
+
+      for (let i = 0; i <= steps; i += 1) {
+        const t = i / steps;
+        points.push({
+          lat: from.lat + (to.lat - from.lat) * t + Math.sin(Math.PI * t) * 10,
+          lon: from.lon + (to.lon - from.lon) * t
+        });
+      }
+
+      return points;
+    }
+
+    function drawCities(radius, center) {
+      Object.entries(cities).forEach(([name, coords]) => {
+        const point = project(coords.lat, coords.lon, radius, center);
+
+        if (point.z < 0) {
+          return;
+        }
+
+        const scale = 0.7 + point.z * 0.5;
+
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 4 * scale, 0, Math.PI * 2);
+        ctx.fillStyle = name === "London" ? "#8ff0cf" : "#f6c85f";
+        ctx.fill();
+      });
+    }
+
+    function draw() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+
+      if (canvas.width !== Math.round(rect.width * dpr)) {
+        canvas.width = Math.round(rect.width * dpr);
+        canvas.height = Math.round(rect.height * dpr);
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const center = { x: canvas.width / 2, y: canvas.height / 2 };
+      const radius = Math.min(canvas.width, canvas.height) * 0.43;
+
+      if (!pointer) {
+        rotation.x += velocity.x;
+        rotation.y += velocity.y;
+      }
+
+      drawSphere(radius, center);
+      requestAnimationFrame(draw);
+    }
+
+    canvas.addEventListener("pointerdown", (event) => {
+      canvas.setPointerCapture(event.pointerId);
+      pointer = {
+        id: event.pointerId,
+        x: event.clientX,
+        y: event.clientY
+      };
+    });
+
+    canvas.addEventListener("pointermove", (event) => {
+      if (!pointer || pointer.id !== event.pointerId) {
+        return;
+      }
+
+      const dx = event.clientX - pointer.x;
+      const dy = event.clientY - pointer.y;
+      rotation.y += dx * 0.008;
+      rotation.x += dy * 0.008;
+      rotation.x = Math.max(-1.35, Math.min(1.35, rotation.x));
+      pointer.x = event.clientX;
+      pointer.y = event.clientY;
+    });
+
+    canvas.addEventListener("pointerup", () => {
+      pointer = null;
+    });
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const postcode = postcodeInput.value.trim().toUpperCase();
+
+      if (!postcode) {
+        message.textContent = "Enter a postcode before searching.";
+        message.style.color = "var(--danger)";
+        return;
+      }
+
+      message.textContent = `Postcode ${postcode} captured. This is where the future airport and route API call will run.`;
+      message.style.color = "var(--accent-strong)";
+    });
+
+    draw();
+  </script>
 </body>
 </html>
