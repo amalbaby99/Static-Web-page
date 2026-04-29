@@ -13,6 +13,9 @@ const latestServerMessage = document.getElementById("latestServerMessage");
 const refreshFeed = document.getElementById("refreshFeed");
 
 const SERVER_BASE_URL = "https://plasma-kindly-liqueur.ngrok-free.dev";
+const SERVER_HEADERS = {
+  "ngrok-skip-browser-warning": "true"
+};
 
 const postcodeLocations = {
   "SW1A1AA": { postcode: "SW1A 1AA", label: "London, United Kingdom", lat: 51.501, lon: -0.141 },
@@ -38,7 +41,7 @@ let visibleFlights = [];
 let selectedFlight = null;
 let viewer = null;
 let flightEntities = new Map();
-let eventStream = null;
+let eventStreamController = null;
 
 function normalisePostcode(value) {
   return value.replace(/\s+/g, "").toUpperCase();
@@ -156,7 +159,8 @@ function applyServerPayload(payload) {
 
 async function loadInitialServerState() {
   const response = await fetch(`${SERVER_BASE_URL}/api/state?ts=${Date.now()}`, {
-    cache: "no-store"
+    cache: "no-store",
+    headers: SERVER_HEADERS
   });
   if (!response.ok) {
     throw new Error(`State request failed with ${response.status}`);
@@ -180,31 +184,62 @@ async function refreshServerState() {
   }
 }
 
-function connectServerEvents() {
-  if (!window.EventSource) {
-    updateApiStatus("Unsupported", "This browser does not support live updates.");
-    return;
-  }
-
-  eventStream = new EventSource(`${SERVER_BASE_URL}/api/events/stream`);
+async function connectServerEvents() {
+  eventStreamController = new AbortController();
   updateApiStatus("Connecting", "Opening live server feed.");
 
-  eventStream.onopen = () => {
-    updateApiStatus("Live", "Connected to server.");
-  };
+  try {
+    const response = await fetch(`${SERVER_BASE_URL}/api/events/stream`, {
+      cache: "no-store",
+      headers: SERVER_HEADERS,
+      signal: eventStreamController.signal
+    });
 
-  eventStream.onmessage = (event) => {
-    updateApiStatus("Live");
-    try {
-      applyServerPayload(JSON.parse(event.data));
-    } catch {
-      updateApiStatus("Live", "Received an unreadable server message.");
+    if (!response.ok || !response.body) {
+      throw new Error(`Stream request failed with ${response.status}`);
     }
-  };
 
-  eventStream.onerror = () => {
-    updateApiStatus("Disconnected", "Waiting for server connection.");
-  };
+    updateApiStatus("Live", "Connected to server.");
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      const messages = buffer.split("\n\n");
+      buffer = messages.pop() || "";
+
+      messages.forEach((message) => {
+        const dataLine = message
+          .split("\n")
+          .find((line) => line.startsWith("data: "));
+
+        if (!dataLine) {
+          return;
+        }
+
+        try {
+          updateApiStatus("Live");
+          applyServerPayload(JSON.parse(dataLine.slice(6)));
+        } catch {
+          updateApiStatus("Live", "Received an unreadable server message.");
+        }
+      });
+    }
+  } catch (error) {
+    if (error.name === "AbortError") {
+      return;
+    }
+
+    console.error("Feed stream failed", error);
+    updateApiStatus("Disconnected", error.message || "Waiting for server connection.");
+    setTimeout(connectServerEvents, 5000);
+  }
 }
 
 async function initCesium() {
