@@ -12,10 +12,9 @@ const lastServerUpdate = document.getElementById("lastServerUpdate");
 const latestServerMessage = document.getElementById("latestServerMessage");
 const refreshFeed = document.getElementById("refreshFeed");
 
-const SERVER_BASE_URL = "https://plasma-kindly-liqueur.ngrok-free.dev";
-const SERVER_HEADERS = {
-  "ngrok-skip-browser-warning": "true"
-};
+const SERVER_BASE_URL = window.location.hostname.endsWith("github.io")
+  ? "https://plasma-kindly-liqueur.ngrok-free.dev"
+  : window.location.origin;
 
 const postcodeLocations = {
   "SW1A1AA": { postcode: "SW1A 1AA", label: "London, United Kingdom", lat: 51.501, lon: -0.141 },
@@ -159,8 +158,7 @@ function applyServerPayload(payload) {
 
 async function loadInitialServerState() {
   const response = await fetch(`${SERVER_BASE_URL}/api/state?ts=${Date.now()}`, {
-    cache: "no-store",
-    headers: SERVER_HEADERS
+    cache: "no-store"
   });
   if (!response.ok) {
     throw new Error(`State request failed with ${response.status}`);
@@ -191,7 +189,6 @@ async function connectServerEvents() {
   try {
     const response = await fetch(`${SERVER_BASE_URL}/api/events/stream`, {
       cache: "no-store",
-      headers: SERVER_HEADERS,
       signal: eventStreamController.signal
     });
 
