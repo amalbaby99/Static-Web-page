@@ -12,9 +12,8 @@ const lastServerUpdate = document.getElementById("lastServerUpdate");
 const latestServerMessage = document.getElementById("latestServerMessage");
 const refreshFeed = document.getElementById("refreshFeed");
 
-const SERVER_BASE_URL = window.location.hostname.endsWith("github.io")
-  ? "https://plasma-kindly-liqueur.ngrok-free.dev"
-  : window.location.origin;
+const IS_GITHUB_PAGES = window.location.hostname.endsWith("github.io");
+const SERVER_BASE_URL = window.location.origin;
 
 const postcodeLocations = {
   "SW1A1AA": { postcode: "SW1A 1AA", label: "London, United Kingdom", lat: 51.501, lon: -0.141 },
@@ -157,6 +156,10 @@ function applyServerPayload(payload) {
 }
 
 async function loadInitialServerState() {
+  if (IS_GITHUB_PAGES) {
+    throw new Error("Open the ngrok URL for live data.");
+  }
+
   const response = await fetch(`${SERVER_BASE_URL}/api/state?ts=${Date.now()}`, {
     cache: "no-store"
   });
@@ -183,6 +186,11 @@ async function refreshServerState() {
 }
 
 async function connectServerEvents() {
+  if (IS_GITHUB_PAGES) {
+    updateApiStatus("Preview Mode", "Open the ngrok URL for live data.");
+    return;
+  }
+
   eventStreamController = new AbortController();
   updateApiStatus("Connecting", "Opening live server feed.");
 
