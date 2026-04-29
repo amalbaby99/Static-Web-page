@@ -381,12 +381,19 @@ input {
   font-size: 0.78rem;
 }
 
+.data-card > div {
+  min-width: 0;
+}
+
 .data-card strong {
   display: block;
   margin-top: 0.25rem;
   color: var(--text);
   font-size: 0.95rem;
   font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .status-dot {

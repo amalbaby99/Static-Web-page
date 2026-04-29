@@ -6,6 +6,12 @@ const locationPlace = document.getElementById("locationPlace");
 const locationCoords = document.getElementById("locationCoords");
 const flightCount = document.getElementById("flightCount");
 const flightRows = document.getElementById("flightRows");
+const dataSource = document.getElementById("dataSource");
+const apiStatus = document.getElementById("apiStatus");
+const lastServerUpdate = document.getElementById("lastServerUpdate");
+const latestServerMessage = document.getElementById("latestServerMessage");
+
+const SERVER_BASE_URL = "https://plasma-kindly-liqueur.ngrok-free.dev";
 
 const postcodeLocations = {
   "SW1A1AA": { postcode: "SW1A 1AA", label: "London, United Kingdom", lat: 51.501, lon: -0.141 },
@@ -15,7 +21,7 @@ const postcodeLocations = {
   "CF101EP": { postcode: "CF10 1EP", label: "Cardiff, United Kingdom", lat: 51.481, lon: -3.179 }
 };
 
-const flights = [
+let flights = [
   { callsign: "BAW142", airline: "British Airways", from: "LHR", to: "JFK", fromName: "London Heathrow", toName: "New York JFK", aircraft: "Boeing 777", altitude: 36000, speed: 466, heading: 287, vertical: "+64 ft/min", squawk: "1234", lat: 51.72, lon: -1.45, origin: { lat: 51.47, lon: -0.454 }, destination: { lat: 40.6413, lon: -73.7781 } },
   { callsign: "EZY45KR", airline: "easyJet", from: "MAN", to: "BCN", fromName: "Manchester", toName: "Barcelona", aircraft: "Airbus A320", altitude: 28000, speed: 412, heading: 172, vertical: "-128 ft/min", squawk: "4561", lat: 53.12, lon: -2.72, origin: { lat: 53.35, lon: -2.274 }, destination: { lat: 41.2974, lon: 2.0833 } },
   { callsign: "RYR6QZP", airline: "Ryanair", from: "BHX", to: "DUB", fromName: "Birmingham", toName: "Dublin", aircraft: "Boeing 737", altitude: 34000, speed: 439, heading: 295, vertical: "+0 ft/min", squawk: "7312", lat: 52.68, lon: -2.35, origin: { lat: 52.4539, lon: -1.748 }, destination: { lat: 53.4213, lon: -6.2701 } },
@@ -31,6 +37,7 @@ let visibleFlights = [];
 let selectedFlight = null;
 let viewer = null;
 let flightEntities = new Map();
+let eventStream = null;
 
 function normalisePostcode(value) {
   return value.replace(/\s+/g, "").toUpperCase();
@@ -59,6 +66,127 @@ function getNearbyFlights() {
 
 function formatCoord(value, positive, negative) {
   return `${Math.abs(value).toFixed(4)} ${value >= 0 ? positive : negative}`;
+}
+
+function formatServerTime(timestamp) {
+  if (!timestamp) {
+    return "Waiting";
+  }
+
+  return new Date(timestamp * 1000).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}
+
+function normaliseFlight(rawFlight) {
+  const callsign = rawFlight.callsign || rawFlight.flight || rawFlight.icao24 || "UNKNOWN";
+  const lat = Number(rawFlight.lat ?? rawFlight.latitude);
+  const lon = Number(rawFlight.lon ?? rawFlight.lng ?? rawFlight.longitude);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    return null;
+  }
+
+  return {
+    callsign,
+    airline: rawFlight.airline || rawFlight.operator || "Live Aircraft",
+    from: rawFlight.from || rawFlight.origin_code || "UNK",
+    to: rawFlight.to || rawFlight.destination_code || "UNK",
+    fromName: rawFlight.fromName || rawFlight.origin_name || "Unknown origin",
+    toName: rawFlight.toName || rawFlight.destination_name || "Unknown destination",
+    aircraft: rawFlight.aircraft || rawFlight.type || "Unknown aircraft",
+    altitude: Number(rawFlight.altitude ?? rawFlight.alt_baro ?? 0),
+    speed: Number(rawFlight.speed ?? rawFlight.groundspeed ?? rawFlight.velocity ?? 0),
+    heading: Number(rawFlight.heading ?? rawFlight.track ?? 0),
+    vertical: rawFlight.vertical || `${Number(rawFlight.vertical_rate ?? 0)} ft/min`,
+    squawk: rawFlight.squawk || "----",
+    lat,
+    lon,
+    origin: rawFlight.origin || { lat, lon },
+    destination: rawFlight.destination || { lat, lon }
+  };
+}
+
+function updateApiStatus(status, message) {
+  apiStatus.textContent = status;
+  if (message) {
+    latestServerMessage.textContent = message;
+  }
+}
+
+function applyServerPayload(payload) {
+  const data = payload.data || {};
+
+  dataSource.textContent = data.source || "FastAPI Live Feed";
+  lastServerUpdate.textContent = formatServerTime(payload.received_at);
+
+  if (data.message) {
+    latestServerMessage.textContent = data.message;
+  }
+
+  if (data.location) {
+    const lat = Number(data.location.lat ?? data.location.latitude);
+    const lon = Number(data.location.lon ?? data.location.lng ?? data.location.longitude);
+
+    if (Number.isFinite(lat) && Number.isFinite(lon)) {
+      currentLocation = {
+        postcode: data.location.postcode || currentLocation.postcode,
+        label: data.location.label || data.location.place || currentLocation.label,
+        lat,
+        lon
+      };
+    }
+  }
+
+  if (Array.isArray(data.flights)) {
+    const liveFlights = data.flights
+      .map(normaliseFlight)
+      .filter(Boolean);
+
+    if (liveFlights.length) {
+      flights = liveFlights;
+    }
+  }
+
+  updateLocation(currentLocation);
+}
+
+async function loadInitialServerState() {
+  const response = await fetch(`${SERVER_BASE_URL}/api/state`);
+  if (!response.ok) {
+    throw new Error(`State request failed with ${response.status}`);
+  }
+
+  applyServerPayload(await response.json());
+}
+
+function connectServerEvents() {
+  if (!window.EventSource) {
+    updateApiStatus("Unsupported", "This browser does not support live updates.");
+    return;
+  }
+
+  eventStream = new EventSource(`${SERVER_BASE_URL}/api/events/stream`);
+  updateApiStatus("Connecting", "Opening live server feed.");
+
+  eventStream.onopen = () => {
+    updateApiStatus("Live", "Connected to server.");
+  };
+
+  eventStream.onmessage = (event) => {
+    updateApiStatus("Live");
+    try {
+      applyServerPayload(JSON.parse(event.data));
+    } catch {
+      updateApiStatus("Live", "Received an unreadable server message.");
+    }
+  };
+
+  eventStream.onerror = () => {
+    updateApiStatus("Disconnected", "Waiting for server connection.");
+  };
 }
 
 async function initCesium() {
@@ -294,6 +422,10 @@ async function startApp() {
   updateLocation(currentLocation);
   updateClock();
   setInterval(updateClock, 1000);
+  loadInitialServerState()
+    .then(() => updateApiStatus("Live"))
+    .catch(() => updateApiStatus("Demo Mode", "Using local mock data."));
+  connectServerEvents();
 }
 
 startApp();
