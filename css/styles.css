@@ -396,6 +396,26 @@ input {
   white-space: nowrap;
 }
 
+.refresh-feed {
+  grid-column: 1 / -1;
+  height: 2.45rem;
+  border: 1px solid rgba(45, 147, 255, 0.52);
+  border-radius: 0.45rem;
+  background: rgba(45, 147, 255, 0.14);
+  color: #d9ecff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.refresh-feed:hover:not(:disabled) {
+  background: rgba(45, 147, 255, 0.22);
+}
+
+.refresh-feed:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
 .status-dot {
   display: inline-block;
   width: 0.75rem;

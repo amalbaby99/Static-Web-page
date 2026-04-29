@@ -10,6 +10,7 @@ const dataSource = document.getElementById("dataSource");
 const apiStatus = document.getElementById("apiStatus");
 const lastServerUpdate = document.getElementById("lastServerUpdate");
 const latestServerMessage = document.getElementById("latestServerMessage");
+const refreshFeed = document.getElementById("refreshFeed");
 
 const SERVER_BASE_URL = "https://plasma-kindly-liqueur.ngrok-free.dev";
 
@@ -160,6 +161,20 @@ async function loadInitialServerState() {
   }
 
   applyServerPayload(await response.json());
+}
+
+async function refreshServerState() {
+  refreshFeed.disabled = true;
+  updateApiStatus("Refreshing", "Fetching latest server state.");
+
+  try {
+    await loadInitialServerState();
+    updateApiStatus("Live", "Feed refreshed from server.");
+  } catch {
+    updateApiStatus("Unavailable", "Could not refresh the server feed.");
+  } finally {
+    refreshFeed.disabled = false;
+  }
 }
 
 function connectServerEvents() {
@@ -412,6 +427,8 @@ flightRows.addEventListener("click", (event) => {
     renderCesiumEntities();
   }
 });
+
+refreshFeed.addEventListener("click", refreshServerState);
 
 function updateClock() {
   clock.textContent = `${new Date().toISOString().slice(11, 19)} UTC`;
