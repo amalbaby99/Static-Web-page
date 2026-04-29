@@ -155,7 +155,9 @@ function applyServerPayload(payload) {
 }
 
 async function loadInitialServerState() {
-  const response = await fetch(`${SERVER_BASE_URL}/api/state`);
+  const response = await fetch(`${SERVER_BASE_URL}/api/state?ts=${Date.now()}`, {
+    cache: "no-store"
+  });
   if (!response.ok) {
     throw new Error(`State request failed with ${response.status}`);
   }
@@ -170,8 +172,9 @@ async function refreshServerState() {
   try {
     await loadInitialServerState();
     updateApiStatus("Live", "Feed refreshed from server.");
-  } catch {
-    updateApiStatus("Unavailable", "Could not refresh the server feed.");
+  } catch (error) {
+    console.error("Feed refresh failed", error);
+    updateApiStatus("Unavailable", error.message || "Could not refresh the server feed.");
   } finally {
     refreshFeed.disabled = false;
   }
