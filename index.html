@@ -22,6 +22,11 @@
 
       <form class="search" id="postcodeForm">
         <input id="postcode" name="postcode" autocomplete="postal-code" placeholder="Enter postcode, e.g. SW1A 1AA" required>
+        <label class="radius-control" for="radiusMiles">
+          <span>Radius</span>
+          <input id="radiusMiles" name="radiusMiles" type="number" min="5" max="150" step="5" value="100">
+          <span>mi</span>
+        </label>
         <button type="submit">Search</button>
       </form>
 
@@ -47,7 +52,7 @@
             <span class="target" aria-hidden="true">+</span>
           </div>
           <div class="radius-row">
-            <span>Radius: <strong>100 miles</strong></span>
+            <span>Radius: <strong id="activeRadius">100 miles</strong></span>
             <div class="range" aria-hidden="true"></div>
           </div>
         </section>

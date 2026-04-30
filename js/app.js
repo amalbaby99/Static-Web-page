@@ -1,9 +1,11 @@
 const form = document.getElementById("postcodeForm");
 const postcodeInput = document.getElementById("postcode");
+const radiusMilesInput = document.getElementById("radiusMiles");
 const clock = document.getElementById("clock");
 const locationPostcode = document.getElementById("locationPostcode");
 const locationPlace = document.getElementById("locationPlace");
 const locationCoords = document.getElementById("locationCoords");
+const activeRadius = document.getElementById("activeRadius");
 const flightCount = document.getElementById("flightCount");
 const flightRows = document.getElementById("flightRows");
 const dataSource = document.getElementById("dataSource");
@@ -41,6 +43,7 @@ let viewer = null;
 let flightEntities = new Map();
 let eventStreamController = null;
 let postcodeSearchActive = false;
+let currentRadiusMiles = Number(radiusMilesInput.value);
 
 function normalisePostcode(value) {
   return value.replace(/\s+/g, "").toUpperCase();
@@ -63,8 +66,17 @@ function distanceMiles(a, b) {
 function getNearbyFlights() {
   return flights
     .map((flight) => ({ ...flight, distance: distanceMiles(currentLocation, flight) }))
-    .filter((flight) => flight.distance <= 100)
+    .filter((flight) => flight.distance <= currentRadiusMiles)
     .sort((a, b) => a.distance - b.distance);
+}
+
+function getRadiusMiles() {
+  const value = Number(radiusMilesInput.value);
+  if (!Number.isFinite(value)) {
+    return 100;
+  }
+
+  return Math.min(Math.max(value, 5), 150);
 }
 
 function formatCoord(value, positive, negative) {
@@ -158,13 +170,13 @@ function applyServerPayload(payload) {
   updateLocation(currentLocation);
 }
 
-async function searchPostcodeFlights(postcode) {
+async function searchPostcodeFlights(postcode, radiusMiles) {
   if (IS_GITHUB_PAGES) {
     throw new Error("Open the ngrok URL to search live flights.");
   }
 
   const response = await fetch(
-    `${SERVER_BASE_URL}/api/flights/near?postcode=${encodeURIComponent(postcode)}&radius_miles=100&ts=${Date.now()}`,
+    `${SERVER_BASE_URL}/api/flights/near?postcode=${encodeURIComponent(postcode)}&radius_miles=${radiusMiles}&ts=${Date.now()}`,
     { cache: "no-store" }
   );
 
@@ -460,6 +472,7 @@ function updateLocation(nextLocation) {
   locationPostcode.textContent = currentLocation.postcode;
   locationPlace.textContent = currentLocation.label;
   locationCoords.textContent = `${formatCoord(currentLocation.lat, "N", "S")}, ${formatCoord(currentLocation.lon, "E", "W")}`;
+  activeRadius.textContent = `${currentRadiusMiles} miles`;
   renderFlights();
   renderCesiumEntities();
   cameraToLocation();
@@ -473,8 +486,10 @@ form.addEventListener("submit", async (event) => {
   postcodeInput.setCustomValidity("");
 
   try {
+    currentRadiusMiles = getRadiusMiles();
+    radiusMilesInput.value = currentRadiusMiles;
     updateApiStatus("Searching", "Looking up postcode and nearby aircraft.");
-    await searchPostcodeFlights(postcodeInput.value);
+    await searchPostcodeFlights(postcodeInput.value, currentRadiusMiles);
     updateApiStatus("Live", "Showing aircraft near searched postcode.");
   } catch (error) {
     console.error("Postcode search failed", error);

@@ -95,7 +95,7 @@ input {
 
 .search {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   align-items: center;
   gap: 0.65rem;
   height: 3.05rem;
@@ -114,6 +114,26 @@ input {
   padding: 0 0.8rem;
   background: transparent;
   color: var(--text);
+}
+
+.radius-control {
+  display: grid;
+  grid-template-columns: auto 4.5rem auto;
+  align-items: center;
+  gap: 0.35rem;
+  height: 100%;
+  padding: 0 0.65rem;
+  border-left: 1px solid rgba(120, 154, 196, 0.24);
+  border-right: 1px solid rgba(120, 154, 196, 0.24);
+  color: #c7d4e5;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.radius-control input {
+  width: 4.5rem;
+  padding: 0 0.3rem;
+  text-align: right;
 }
 
 .search input::placeholder {
@@ -642,6 +662,13 @@ footer {
 
   .search {
     height: auto;
+  }
+
+  .radius-control {
+    min-height: 2.75rem;
+    border: 1px solid rgba(120, 154, 196, 0.24);
+    border-radius: 0.45rem;
+    justify-content: space-between;
   }
 
   .search button {
