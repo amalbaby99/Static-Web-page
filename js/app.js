@@ -546,11 +546,14 @@ function renderFlightDetail() {
 async function loadSelectedAircraftImage(flight) {
   const requestId = ++selectedImageRequest;
   const imageSlot = document.getElementById("aircraftPhoto");
-  const query = [flight.manufacturer, flight.model, flight.icaoType, flight.aircraft]
+  const aircraftQuery = [flight.manufacturer, flight.model, flight.icaoType, flight.aircraft]
+    .filter(Boolean)
+    .join(" ");
+  const companyQuery = [flight.airline, aircraftQuery]
     .filter(Boolean)
     .join(" ");
 
-  if (!imageSlot || !query.trim() || query.includes("ICAO24")) {
+  if (!imageSlot || !aircraftQuery.trim() || aircraftQuery.includes("ICAO24")) {
     if (imageSlot) {
       imageSlot.innerHTML = "<span>No aircraft image available.</span>";
     }
@@ -558,8 +561,13 @@ async function loadSelectedAircraftImage(flight) {
   }
 
   try {
+    const params = new URLSearchParams({
+      query: companyQuery,
+      fallback_query: aircraftQuery,
+      ts: String(Date.now())
+    });
     const response = await fetch(
-      `${SERVER_BASE_URL}/api/aircraft/image?query=${encodeURIComponent(query)}&ts=${Date.now()}`,
+      `${SERVER_BASE_URL}/api/aircraft/image?${params}`,
       { cache: "no-store" }
     );
     if (!response.ok) {
