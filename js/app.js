@@ -40,6 +40,7 @@ let selectedFlight = null;
 let viewer = null;
 let flightEntities = new Map();
 let eventStreamController = null;
+let postcodeSearchActive = false;
 
 function normalisePostcode(value) {
   return value.replace(/\s+/g, "").toUpperCase();
@@ -121,6 +122,10 @@ function updateApiStatus(status, message) {
 function applyServerPayload(payload) {
   const data = payload.data || {};
 
+  if (postcodeSearchActive && payload.type === "flight_update" && !data.location) {
+    return;
+  }
+
   dataSource.textContent = data.source || "FastAPI Live Feed";
   lastServerUpdate.textContent = formatServerTime(payload.received_at);
 
@@ -147,12 +152,29 @@ function applyServerPayload(payload) {
       .map(normaliseFlight)
       .filter(Boolean);
 
-    if (liveFlights.length) {
-      flights = liveFlights;
-    }
+    flights = liveFlights;
   }
 
   updateLocation(currentLocation);
+}
+
+async function searchPostcodeFlights(postcode) {
+  if (IS_GITHUB_PAGES) {
+    throw new Error("Open the ngrok URL to search live flights.");
+  }
+
+  const response = await fetch(
+    `${SERVER_BASE_URL}/api/flights/near?postcode=${encodeURIComponent(postcode)}&radius_miles=100&ts=${Date.now()}`,
+    { cache: "no-store" }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+    throw new Error(error?.detail || `Postcode search failed with ${response.status}`);
+  }
+
+  postcodeSearchActive = true;
+  applyServerPayload(await response.json());
 }
 
 async function loadInitialServerState() {
@@ -412,7 +434,7 @@ function renderCesiumEntities() {
 function renderFlights() {
   flightCount.textContent = visibleFlights.length;
   if (!visibleFlights.length) {
-    flightRows.innerHTML = `<div class="flight-row"><div></div><div><p class="flight-id">No aircraft found</p><p class="airline">No mock flights are inside 100 miles.</p></div></div>`;
+    flightRows.innerHTML = `<div class="flight-row"><div></div><div><p class="flight-id">No aircraft found</p><p class="airline">No live aircraft are inside 100 miles.</p></div></div>`;
     return;
   }
 
@@ -434,7 +456,7 @@ function renderFlights() {
 function updateLocation(nextLocation) {
   currentLocation = nextLocation;
   visibleFlights = getNearbyFlights();
-  selectedFlight = visibleFlights[0] || { ...flights[0], distance: distanceMiles(currentLocation, flights[0]) };
+  selectedFlight = visibleFlights[0] || null;
   locationPostcode.textContent = currentLocation.postcode;
   locationPlace.textContent = currentLocation.label;
   locationCoords.textContent = `${formatCoord(currentLocation.lat, "N", "S")}, ${formatCoord(currentLocation.lon, "E", "W")}`;
@@ -443,19 +465,30 @@ function updateLocation(nextLocation) {
   cameraToLocation();
 }
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const key = normalisePostcode(postcodeInput.value);
   const nextLocation = postcodeLocations[key];
 
-  if (!nextLocation) {
-    postcodeInput.setCustomValidity("Try SW1A 1AA, M1 1AE, B1 1BB, EH1 1YZ, or CF10 1EP.");
-    postcodeInput.reportValidity();
-    return;
-  }
-
   postcodeInput.setCustomValidity("");
-  updateLocation(nextLocation);
+
+  try {
+    updateApiStatus("Searching", "Looking up postcode and nearby aircraft.");
+    await searchPostcodeFlights(postcodeInput.value);
+    updateApiStatus("Live", "Showing aircraft near searched postcode.");
+  } catch (error) {
+    console.error("Postcode search failed", error);
+
+    if (nextLocation) {
+      updateLocation(nextLocation);
+      updateApiStatus("Demo Mode", error.message || "Using local postcode demo data.");
+      return;
+    }
+
+    postcodeInput.setCustomValidity(error.message || "Enter a valid UK postcode.");
+    postcodeInput.reportValidity();
+    updateApiStatus("Unavailable", "Postcode search failed.");
+  }
 });
 
 flightRows.addEventListener("click", (event) => {
