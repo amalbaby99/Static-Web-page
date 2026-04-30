@@ -45,6 +45,7 @@ let flightEntities = new Map();
 let eventStreamController = null;
 let postcodeSearchActive = false;
 let currentRadiusMiles = Number(radiusMilesInput.value);
+let selectedImageRequest = 0;
 
 function normalisePostcode(value) {
   return value.replace(/\s+/g, "").toUpperCase();
@@ -512,6 +513,9 @@ function renderFlightDetail() {
   }
 
   flightDetail.innerHTML = `
+    <div class="aircraft-photo" id="aircraftPhoto">
+      <span>Loading aircraft image...</span>
+    </div>
     <div class="detail-heading">
       <div>
         <p class="flight-id">${escapeHtml(selectedFlight.callsign)}</p>
@@ -535,6 +539,47 @@ function renderFlightDetail() {
       <div><dt>Position</dt><dd>${formatCoord(selectedFlight.lat, "N", "S")}, ${formatCoord(selectedFlight.lon, "E", "W")}</dd></div>
     </dl>
   `;
+
+  loadSelectedAircraftImage(selectedFlight);
+}
+
+async function loadSelectedAircraftImage(flight) {
+  const requestId = ++selectedImageRequest;
+  const imageSlot = document.getElementById("aircraftPhoto");
+  const query = [flight.manufacturer, flight.model, flight.icaoType, flight.aircraft]
+    .filter(Boolean)
+    .join(" ");
+
+  if (!imageSlot || !query.trim() || query.includes("ICAO24")) {
+    if (imageSlot) {
+      imageSlot.innerHTML = "<span>No aircraft image available.</span>";
+    }
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `${SERVER_BASE_URL}/api/aircraft/image?query=${encodeURIComponent(query)}&ts=${Date.now()}`,
+      { cache: "no-store" }
+    );
+    if (!response.ok) {
+      throw new Error("No aircraft image found.");
+    }
+
+    const image = await response.json();
+    if (requestId !== selectedImageRequest) {
+      return;
+    }
+
+    imageSlot.innerHTML = `
+      <img src="${escapeHtml(image.thumbnail_url)}" alt="${escapeHtml(flight.aircraft)}">
+      <a href="${escapeHtml(image.source_url)}" target="_blank" rel="noopener">Image: Wikimedia Commons</a>
+    `;
+  } catch {
+    if (requestId === selectedImageRequest && imageSlot) {
+      imageSlot.innerHTML = "<span>No aircraft image available.</span>";
+    }
+  }
 }
 
 function updateLocation(nextLocation) {
