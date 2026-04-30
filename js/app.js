@@ -8,6 +8,7 @@ const locationCoords = document.getElementById("locationCoords");
 const activeRadius = document.getElementById("activeRadius");
 const flightCount = document.getElementById("flightCount");
 const flightRows = document.getElementById("flightRows");
+const flightDetail = document.getElementById("flightDetail");
 const dataSource = document.getElementById("dataSource");
 const apiStatus = document.getElementById("apiStatus");
 const lastServerUpdate = document.getElementById("lastServerUpdate");
@@ -79,8 +80,21 @@ function getRadiusMiles() {
   return Math.min(Math.max(value, 5), 150);
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 function formatCoord(value, positive, negative) {
   return `${Math.abs(value).toFixed(4)} ${value >= 0 ? positive : negative}`;
+}
+
+function radiusMetres() {
+  return currentRadiusMiles * 1609.34;
 }
 
 function formatServerTime(timestamp) {
@@ -104,6 +118,8 @@ function normaliseFlight(rawFlight) {
     return null;
   }
 
+  const icao24 = rawFlight.icao24 || rawFlight.aircraft?.replace("ICAO24 ", "") || "Unknown";
+
   return {
     callsign,
     airline: rawFlight.airline || rawFlight.operator || "Live Aircraft",
@@ -111,7 +127,7 @@ function normaliseFlight(rawFlight) {
     to: rawFlight.to || rawFlight.destination_code || "UNK",
     fromName: rawFlight.fromName || rawFlight.origin_name || "Unknown origin",
     toName: rawFlight.toName || rawFlight.destination_name || "Unknown destination",
-    aircraft: rawFlight.aircraft || rawFlight.type || "Unknown aircraft",
+    aircraft: rawFlight.aircraft || rawFlight.type || `ICAO24 ${icao24}`,
     altitude: Number(rawFlight.altitude ?? rawFlight.alt_baro ?? 0),
     speed: Number(rawFlight.speed ?? rawFlight.groundspeed ?? rawFlight.velocity ?? 0),
     heading: Number(rawFlight.heading ?? rawFlight.track ?? 0),
@@ -120,7 +136,8 @@ function normaliseFlight(rawFlight) {
     lat,
     lon,
     origin: rawFlight.origin || { lat, lon },
-    destination: rawFlight.destination || { lat, lon }
+    destination: rawFlight.destination || { lat, lon },
+    icao24
   };
 }
 
@@ -337,10 +354,10 @@ function cameraToLocation() {
   }
 
   const target = Cesium.Cartesian3.fromDegrees(currentLocation.lon, currentLocation.lat, 0);
-  const range = 2400000;
+  const range = Math.max(radiusMetres() * 4.2, 420000);
 
   viewer.camera.flyToBoundingSphere(
-    new Cesium.BoundingSphere(target, 160934),
+    new Cesium.BoundingSphere(target, radiusMetres()),
     {
       offset: new Cesium.HeadingPitchRange(
         Cesium.Math.toRadians(18),
@@ -390,8 +407,8 @@ function renderCesiumEntities() {
       disableDepthTestDistance: Number.POSITIVE_INFINITY
     },
     ellipse: {
-      semiMajorAxis: 160934,
-      semiMinorAxis: 160934,
+      semiMajorAxis: radiusMetres(),
+      semiMinorAxis: radiusMetres(),
       material: Cesium.Color.DODGERBLUE.withAlpha(0.08),
       outline: true,
       outlineColor: Cesium.Color.LIGHTSKYBLUE.withAlpha(0.75),
@@ -446,16 +463,16 @@ function renderCesiumEntities() {
 function renderFlights() {
   flightCount.textContent = visibleFlights.length;
   if (!visibleFlights.length) {
-    flightRows.innerHTML = `<div class="flight-row"><div></div><div><p class="flight-id">No aircraft found</p><p class="airline">No live aircraft are inside 100 miles.</p></div></div>`;
+    flightRows.innerHTML = `<div class="flight-row"><div></div><div><p class="flight-id">No aircraft found</p><p class="airline">No live aircraft are inside ${currentRadiusMiles} miles.</p></div></div>`;
     return;
   }
 
   flightRows.innerHTML = visibleFlights.map((flight) => `
-    <div class="flight-row ${selectedFlight && selectedFlight.callsign === flight.callsign ? "active" : ""}" data-callsign="${flight.callsign}">
+    <div class="flight-row ${selectedFlight && selectedFlight.callsign === flight.callsign ? "active" : ""}" data-callsign="${escapeHtml(flight.callsign)}">
       <div class="plane" aria-hidden="true">&gt;</div>
       <div>
-        <p class="flight-id">${flight.callsign}</p>
-        <p class="airline">${flight.airline}</p>
+        <p class="flight-id">${escapeHtml(flight.callsign)}</p>
+        <p class="airline">${escapeHtml(flight.airline)}</p>
       </div>
       <div class="flight-values">
         <strong>${flight.altitude.toLocaleString()} ft</strong>
@@ -463,6 +480,33 @@ function renderFlights() {
       </div>
     </div>
   `).join("");
+}
+
+function renderFlightDetail() {
+  if (!selectedFlight) {
+    flightDetail.innerHTML = `<p class="detail-empty">Select an aircraft to view live flight data.</p>`;
+    return;
+  }
+
+  flightDetail.innerHTML = `
+    <div class="detail-heading">
+      <div>
+        <p class="flight-id">${escapeHtml(selectedFlight.callsign)}</p>
+        <p class="airline">${escapeHtml(selectedFlight.airline)}</p>
+      </div>
+      <strong>${selectedFlight.distance.toFixed(1)} mi</strong>
+    </div>
+    <dl class="detail-grid">
+      <div><dt>Altitude</dt><dd>${selectedFlight.altitude.toLocaleString()} ft</dd></div>
+      <div><dt>Speed</dt><dd>${selectedFlight.speed} kts</dd></div>
+      <div><dt>Heading</dt><dd>${selectedFlight.heading} deg</dd></div>
+      <div><dt>Vertical</dt><dd>${escapeHtml(selectedFlight.vertical)}</dd></div>
+      <div><dt>Squawk</dt><dd>${escapeHtml(selectedFlight.squawk)}</dd></div>
+      <div><dt>Aircraft</dt><dd>${escapeHtml(selectedFlight.aircraft)}</dd></div>
+      <div><dt>Route</dt><dd>${escapeHtml(selectedFlight.from)} to ${escapeHtml(selectedFlight.to)}</dd></div>
+      <div><dt>Position</dt><dd>${formatCoord(selectedFlight.lat, "N", "S")}, ${formatCoord(selectedFlight.lon, "E", "W")}</dd></div>
+    </dl>
+  `;
 }
 
 function updateLocation(nextLocation) {
@@ -474,6 +518,7 @@ function updateLocation(nextLocation) {
   locationCoords.textContent = `${formatCoord(currentLocation.lat, "N", "S")}, ${formatCoord(currentLocation.lon, "E", "W")}`;
   activeRadius.textContent = `${currentRadiusMiles} miles`;
   renderFlights();
+  renderFlightDetail();
   renderCesiumEntities();
   cameraToLocation();
 }
@@ -515,6 +560,7 @@ flightRows.addEventListener("click", (event) => {
   if (flight) {
     selectedFlight = flight;
     renderFlights();
+    renderFlightDetail();
     renderCesiumEntities();
   }
 });
