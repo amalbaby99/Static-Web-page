@@ -98,6 +98,15 @@ function radiusMetres() {
   return currentRadiusMiles * 1609.34;
 }
 
+function aircraftIconRotation(heading) {
+  const value = Number(heading);
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return value - 45;
+}
+
 function formatServerTime(timestamp) {
   if (!timestamp) {
     return "Waiting";
@@ -493,7 +502,7 @@ function renderFlights() {
 
   flightRows.innerHTML = visibleFlights.map((flight) => `
     <div class="flight-row ${selectedFlight && selectedFlight.callsign === flight.callsign ? "active" : ""}" data-callsign="${escapeHtml(flight.callsign)}">
-      <div class="plane" aria-hidden="true">&#9992;</div>
+      <div class="plane" style="--heading: ${aircraftIconRotation(flight.heading)}deg" aria-hidden="true">&#9992;</div>
       <div>
         <p class="flight-id">${escapeHtml(flight.callsign)}</p>
         <p class="airline">${escapeHtml(flight.airline)}</p>
