@@ -141,6 +141,10 @@ function normaliseFlight(rawFlight) {
     toName: rawFlight.toName || rawFlight.destination_name || null,
     originCountry: rawFlight.origin_country || rawFlight.originCountry || rawFlight.airline || "Unknown",
     aircraft: rawFlight.aircraft || rawFlight.type || `ICAO24 ${icao24}`,
+    registration: rawFlight.registration || null,
+    manufacturer: rawFlight.manufacturer || null,
+    model: rawFlight.model || null,
+    icaoType: rawFlight.icao_type || rawFlight.icaoType || null,
     altitude: Number(rawFlight.altitude ?? rawFlight.alt_baro ?? 0),
     speed: Number(rawFlight.speed ?? rawFlight.groundspeed ?? rawFlight.velocity ?? 0),
     heading: Number(rawFlight.heading ?? rawFlight.track ?? 0),
@@ -522,6 +526,8 @@ function renderFlightDetail() {
       <div><dt>Vertical</dt><dd>${escapeHtml(selectedFlight.vertical)}</dd></div>
       <div><dt>Squawk</dt><dd>${escapeHtml(selectedFlight.squawk)}</dd></div>
       <div><dt>Aircraft</dt><dd>${escapeHtml(selectedFlight.aircraft)}</dd></div>
+      <div><dt>Registration</dt><dd>${escapeHtml(selectedFlight.registration || "Unavailable")}</dd></div>
+      <div><dt>Type code</dt><dd>${escapeHtml(selectedFlight.icaoType || "Unavailable")}</dd></div>
       <div><dt>Origin country</dt><dd>${escapeHtml(selectedFlight.originCountry)}</dd></div>
       <div><dt>Origin airport</dt><dd>${escapeHtml(selectedFlight.fromName || selectedFlight.from || "Unavailable from OpenSky")}</dd></div>
       <div><dt>Destination</dt><dd>${escapeHtml(selectedFlight.toName || selectedFlight.to || "Unavailable from OpenSky")}</dd></div>
