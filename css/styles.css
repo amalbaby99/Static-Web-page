@@ -209,13 +209,15 @@ input {
 .sidebar {
   z-index: 2;
   display: grid;
-  grid-template-rows: auto minmax(12rem, 1fr) auto auto;
+  grid-template-rows: auto minmax(10rem, 0.8fr) minmax(14rem, 1fr) auto;
   gap: 1rem;
   padding: 1rem;
   border-right: 1px solid var(--line);
   background: rgba(3, 9, 16, 0.78);
   backdrop-filter: blur(18px);
   min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .card {
@@ -328,7 +330,14 @@ input {
 
 .flight-list {
   min-height: 0;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#flightRows {
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .flight-row {
@@ -383,10 +392,12 @@ input {
 
 .flight-detail {
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .flight-detail-body {
+  max-height: 100%;
+  overflow-y: auto;
   padding: 1rem;
 }
 
@@ -463,6 +474,7 @@ input {
 }
 
 .view-all {
+  flex: 0 0 auto;
   width: calc(100% - 1.5rem);
   margin: 0.75rem;
   height: 2.5rem;
