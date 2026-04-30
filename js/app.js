@@ -109,6 +109,18 @@ function formatServerTime(timestamp) {
   });
 }
 
+function formatTimestamp(timestamp) {
+  if (!timestamp) {
+    return "Unavailable";
+  }
+
+  return new Date(timestamp * 1000).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}
+
 function normaliseFlight(rawFlight) {
   const callsign = rawFlight.callsign || rawFlight.flight || rawFlight.icao24 || "UNKNOWN";
   const lat = Number(rawFlight.lat ?? rawFlight.latitude);
@@ -123,10 +135,11 @@ function normaliseFlight(rawFlight) {
   return {
     callsign,
     airline: rawFlight.airline || rawFlight.operator || "Live Aircraft",
-    from: rawFlight.from || rawFlight.origin_code || "UNK",
-    to: rawFlight.to || rawFlight.destination_code || "UNK",
-    fromName: rawFlight.fromName || rawFlight.origin_name || "Unknown origin",
-    toName: rawFlight.toName || rawFlight.destination_name || "Unknown destination",
+    from: rawFlight.from || rawFlight.origin_code || null,
+    to: rawFlight.to || rawFlight.destination_code || null,
+    fromName: rawFlight.fromName || rawFlight.origin_name || null,
+    toName: rawFlight.toName || rawFlight.destination_name || null,
+    originCountry: rawFlight.origin_country || rawFlight.originCountry || rawFlight.airline || "Unknown",
     aircraft: rawFlight.aircraft || rawFlight.type || `ICAO24 ${icao24}`,
     altitude: Number(rawFlight.altitude ?? rawFlight.alt_baro ?? 0),
     speed: Number(rawFlight.speed ?? rawFlight.groundspeed ?? rawFlight.velocity ?? 0),
@@ -137,7 +150,13 @@ function normaliseFlight(rawFlight) {
     lon,
     origin: rawFlight.origin || { lat, lon },
     destination: rawFlight.destination || { lat, lon },
-    icao24
+    icao24,
+    timePosition: rawFlight.time_position || rawFlight.timePosition || null,
+    lastContact: rawFlight.last_contact || rawFlight.lastContact || null,
+    onGround: Boolean(rawFlight.on_ground ?? rawFlight.onGround ?? false),
+    totalFlightTime: rawFlight.total_flight_time || rawFlight.totalFlightTime || null,
+    takeoffTime: rawFlight.takeoff_time || rawFlight.takeoffTime || null,
+    landingTime: rawFlight.landing_time || rawFlight.landingTime || null
   };
 }
 
@@ -444,7 +463,7 @@ function renderCesiumEntities() {
         disableDepthTestDistance: Number.POSITIVE_INFINITY
       },
       label: {
-        text: ">",
+        text: "✈",
         font: "900 28px sans-serif",
         fillColor: Cesium.Color.fromCssColorString("#ffc640"),
         outlineColor: Cesium.Color.BLACK,
@@ -469,7 +488,7 @@ function renderFlights() {
 
   flightRows.innerHTML = visibleFlights.map((flight) => `
     <div class="flight-row ${selectedFlight && selectedFlight.callsign === flight.callsign ? "active" : ""}" data-callsign="${escapeHtml(flight.callsign)}">
-      <div class="plane" aria-hidden="true">&gt;</div>
+      <div class="plane" aria-hidden="true">&#9992;</div>
       <div>
         <p class="flight-id">${escapeHtml(flight.callsign)}</p>
         <p class="airline">${escapeHtml(flight.airline)}</p>
@@ -503,7 +522,15 @@ function renderFlightDetail() {
       <div><dt>Vertical</dt><dd>${escapeHtml(selectedFlight.vertical)}</dd></div>
       <div><dt>Squawk</dt><dd>${escapeHtml(selectedFlight.squawk)}</dd></div>
       <div><dt>Aircraft</dt><dd>${escapeHtml(selectedFlight.aircraft)}</dd></div>
-      <div><dt>Route</dt><dd>${escapeHtml(selectedFlight.from)} to ${escapeHtml(selectedFlight.to)}</dd></div>
+      <div><dt>Origin country</dt><dd>${escapeHtml(selectedFlight.originCountry)}</dd></div>
+      <div><dt>Origin airport</dt><dd>${escapeHtml(selectedFlight.fromName || selectedFlight.from || "Unavailable from OpenSky")}</dd></div>
+      <div><dt>Destination</dt><dd>${escapeHtml(selectedFlight.toName || selectedFlight.to || "Unavailable from OpenSky")}</dd></div>
+      <div><dt>Total flight time</dt><dd>${escapeHtml(selectedFlight.totalFlightTime || "Unavailable from OpenSky")}</dd></div>
+      <div><dt>Takeoff</dt><dd>${escapeHtml(selectedFlight.takeoffTime || "Unavailable from OpenSky")}</dd></div>
+      <div><dt>Landing</dt><dd>${escapeHtml(selectedFlight.landingTime || "Unavailable from OpenSky")}</dd></div>
+      <div><dt>Last position</dt><dd>${formatTimestamp(selectedFlight.timePosition)}</dd></div>
+      <div><dt>Last contact</dt><dd>${formatTimestamp(selectedFlight.lastContact)}</dd></div>
+      <div><dt>Status</dt><dd>${selectedFlight.onGround ? "On ground" : "Airborne"}</dd></div>
       <div><dt>Position</dt><dd>${formatCoord(selectedFlight.lat, "N", "S")}, ${formatCoord(selectedFlight.lon, "E", "W")}</dd></div>
     </dl>
   `;
