@@ -484,7 +484,7 @@ function renderCesiumEntities() {
         outlineWidth: 3,
         style: Cesium.LabelStyle.FILL_AND_OUTLINE,
         pixelOffset: new Cesium.Cartesian2(0, -18),
-        rotation: Cesium.Math.toRadians(flight.heading - 90),
+        rotation: Cesium.Math.toRadians(aircraftIconRotation(flight.heading)),
         disableDepthTestDistance: Number.POSITIVE_INFINITY
       }
     });
