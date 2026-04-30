@@ -529,11 +529,6 @@ function renderFlightDetail() {
       <div><dt>Registration</dt><dd>${escapeHtml(selectedFlight.registration || "Unavailable")}</dd></div>
       <div><dt>Type code</dt><dd>${escapeHtml(selectedFlight.icaoType || "Unavailable")}</dd></div>
       <div><dt>Origin country</dt><dd>${escapeHtml(selectedFlight.originCountry)}</dd></div>
-      <div><dt>Origin airport</dt><dd>${escapeHtml(selectedFlight.fromName || selectedFlight.from || "Unavailable from OpenSky")}</dd></div>
-      <div><dt>Destination</dt><dd>${escapeHtml(selectedFlight.toName || selectedFlight.to || "Unavailable from OpenSky")}</dd></div>
-      <div><dt>Total flight time</dt><dd>${escapeHtml(selectedFlight.totalFlightTime || "Unavailable from OpenSky")}</dd></div>
-      <div><dt>Takeoff</dt><dd>${escapeHtml(selectedFlight.takeoffTime || "Unavailable from OpenSky")}</dd></div>
-      <div><dt>Landing</dt><dd>${escapeHtml(selectedFlight.landingTime || "Unavailable from OpenSky")}</dd></div>
       <div><dt>Last position</dt><dd>${formatTimestamp(selectedFlight.timePosition)}</dd></div>
       <div><dt>Last contact</dt><dd>${formatTimestamp(selectedFlight.lastContact)}</dd></div>
       <div><dt>Status</dt><dd>${selectedFlight.onGround ? "On ground" : "Airborne"}</dd></div>
